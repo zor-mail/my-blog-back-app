@@ -4,6 +4,12 @@ target/
 !**/src/test/**/target/
 .kotlin
 
+# IntelliJ IDEA
+.idea/
+
+# Maven
+.mvn/
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
