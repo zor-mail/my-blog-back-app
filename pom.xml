@@ -48,7 +48,12 @@
       <scope>test</scope>
     </dependency>
 
-      <!-- Spring Web MVC -->
+  <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>7.0.1</version> <!-- или твоя версия Spring 6/7 -->
+  </dependency>
+
   <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
@@ -78,10 +83,22 @@
   </dependency>
 
   <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.3</version> <!-- актуальная версия, можно обновить при необходимости -->
+  </dependency>
+
+  <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <version>2.2.224</version> <!-- Используйте актуальную версию -->
       <scope>runtime</scope> <!-- Или <scope>test</scope> если только для тестов -->
+  </dependency>
+
+  <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.0</version>
   </dependency>
 
   <dependency>
