@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS myblog.posts (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     text VARCHAR(255) NOT NULL,
-    tags VARCHAR(255) NOT NULL,
+    tags VARCHAR(255)[] NOT NULL,
     likes_count INT DEFAULT 0 NOT NULL
     );
 

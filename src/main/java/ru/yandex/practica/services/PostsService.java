@@ -1,6 +1,8 @@
 package ru.yandex.practica.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.Post;
 import ru.yandex.practica.repositories.PostsRepository;
 
@@ -16,24 +18,71 @@ import java.util.List;
             this.postsRepository = postsRepository;
         }
 
-        public List<Post> findAll() {
-            return postsRepository.findAll();
+        public Post getPost(
+                Long postId
+        ) {
+            return postsRepository.getPost(postId);
+        }
+
+        public List<Post> getPosts(
+                String search,
+                Integer pageNumber,
+                Integer pageSize
+        ) {
+            return postsRepository.getPosts(search, pageNumber, pageSize);
         }
 
         public void addPost(Post post) {
-            postsRepository.save(post);
+            postsRepository.addPost(post);
         }
 
-        public void update(Long id, Post post) {
-            postsRepository.update(id, post);
+        public void updatePost(Long id, Post post) {
+            postsRepository.updatePost(id, post);
         }
 
-        public void deleteById(Long id) {
-            postsRepository.deleteById(id);
+        public void deletePost(Long id) {
+            postsRepository.deletePost(id);
         }
 
 
-        public Boolean exists(Long id) {
-            return postsRepository.exists(id);
+        // Likes
+        //==============================================
+        public void addLike() {
+            postsRepository.addLike();
         }
+
+
+        // Images
+        //==============================================
+        byte[] getImage(Long postId) {
+            postsRepository.getImage(postId);
+        }
+
+        void updateImage(Long postId, MultipartFile image) {
+            byte[] imageBytes = null;
+            postsRepository.updateImage(postId, imageBytes);
+        }
+
+        // Comments
+        //==============================================
+        public Comment getComment(Long commentId) {
+            postsRepository.getComment(commentId);
+        }
+
+        public List<Comment> getComments(Long postId) {
+            return postsRepository.getComments(postId);
+        }
+
+        public void addComment(Long postId, Comment comment) {
+            postsRepository.addComment(postId, comment);
+        }
+
+        public void updateComment(Long commentId, Comment comment) {
+            postsRepository.updateComment(commentId, comment);
+        }
+
+        public void deleteComment(Long id) {
+            postsRepository.deleteComment(id);
+        }
+
     }
