@@ -93,7 +93,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
     // Likes
     //==============================================
    public void addLike(Long postId) {
-       jdbcTemplate.update("update myblog.posts set likesCount = likesCount + 1 where post_id = ?",
+       jdbcTemplate.update("update myblog.posts set likes_count = likes_count + 1 where post_id = ?",
                postId);
    }
 
