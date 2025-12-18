@@ -6,7 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.sql.Blob;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +30,16 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     // Posts
     //==============================================
+
+    @Override
+    public Long getReconrdsCount(String searchCondition) {
+        return jdbcTemplate.query(
+                "select count(*) as counter from myblog.posts" + searchCondition,
+                (rs, rowNum) -> rs.getLong("counter"), Long.class).
+                stream().findFirst().orElse(null);
+    }
+
+
     @Override
     public Post getPost(Long postId) {
         return jdbcTemplate.query(
@@ -38,17 +50,18 @@ public class JdbcNativePostsRepository implements PostsRepository {
                         rs.getString("text"),
                         rs.getString("tags"),
                         rs.getInt("likes_count")
-                ), Long.class, postId).stream().findFirst().orElse(null);
+                ), postId).stream().findFirst().orElse(null);
     }
+
 
     @Override
     public List<Post> getPosts(
-            String search,
-            Integer pageNumber,
-            Integer pageSize
+            String whereCondition,
+            Long offset
     ) {
-        return jdbcTemplate.query(
-                "select id, title, text, tags, likes_count from myblog.posts",
+        String selectString = String.format("select id, title, text, tags, likes_count from myblog.posts %s OFFSET %d",
+                whereCondition, offset);
+        return jdbcTemplate.query(selectString,
                 (rs, rowNum) -> new Post(
                         rs.getLong("id"),
                         rs.getString("title"),
@@ -79,19 +92,23 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     // Likes
     //==============================================
-   public void addLike() {
-
+   public void addLike(Long postId) {
+       jdbcTemplate.update("update myblog.posts set likesCount = likesCount + 1 where post_id = ?",
+               postId);
    }
 
 
     // Images
     //==============================================
     public byte[] getImage(Long postId) {
-
+        return jdbcTemplate.query("select image from myblog.images where post_id = ?",
+                (rs, rowNum) ->  rs.getBytes("image"),
+                postId).stream().findFirst().orElse(null);
     }
 
     public void updateImage(Long postId, byte[] imageBytes) {
-
+            jdbcTemplate.update("update myblog.images set image = ? where post_id = ?",
+                    imageBytes, postId);
     }
 
     // Comments

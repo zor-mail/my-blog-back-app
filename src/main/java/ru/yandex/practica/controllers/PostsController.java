@@ -1,10 +1,14 @@
 package ru.yandex.practica.controllers;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.Post;
+import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.services.PostsService;
 
 @RestController
@@ -18,15 +22,15 @@ public class PostsController {
     }
 
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Post getPost(
             @PathVariable(name = "id") Long postId
     ) {
         return postsService.getPost(postId);
     }
 
-    @GetMapping
-    public List<Post> getPosts(
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public PostsDTO getPosts(
             @RequestParam("search") String search,
             @RequestParam("pageNumber") Integer pageNumber,
             @RequestParam("pageSize") Integer pageSize
@@ -55,25 +59,24 @@ public class PostsController {
     // Likes
     //==============================================
     @PostMapping("/{id}/likes")
-    public void addLike(@RequestBody Post post) {
-        postsService.addPost(post);
+    public void addLike(@PathVariable(name = "id") Long postId) {
+        postsService.addLike(postId);
     }
 
 
     // Images
     //==============================================
-    @GetMapping("/{id}/image")
-    public Post getImage(
+    @GetMapping(path="/{id}/image", produces = MediaType.IMAGE_PNG_VALUE)
+    public byte[] getImage(
             @PathVariable(name = "id") Long postId
     ) {
         return postsService.getImage(postId);
     }
 
     @PutMapping("/{id}/image")
-    public void updateImage(@PathVariable(name = "id") Long postId, @RequestBody MultipartFile image) {
+    public void updateImage(@PathVariable(name = "id") Long postId, @RequestBody MultipartFile image) throws IOException {
         postsService.updateImage(postId, image);
     }
-
 
 
     // Comments
