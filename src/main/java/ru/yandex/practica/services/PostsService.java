@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
             splittedUnitedWords = searchString;
         else {
             // убирается первое слово в каждом подмассиве, начинающееся с # (как тэг)
-            splittedUnitedWords = Arrays.stream(("#del " + searchString).split("#")).map(substr -> {
+            splittedUnitedWords = Arrays.stream(("for_del " + searchString).split("#")).map(substr -> {
                         String[] substrArr = substr.split("\\s+");// для пробелов, табов и т.п.
                         if (substrArr.length < 2)
                             return null;
