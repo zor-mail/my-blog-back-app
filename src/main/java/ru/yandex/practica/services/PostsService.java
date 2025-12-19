@@ -10,10 +10,12 @@ import ru.yandex.practica.repositories.PostsRepository;
 import java.io.IOException;
 import java.sql.Blob;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
-    @Service
+@Service
     public class PostsService {
 
         private final PostsRepository postsRepository;
@@ -29,12 +31,16 @@ import java.util.List;
         }
 
         public PostsDTO getPosts(
-                String search,
+                String searchString,
                 Integer pageNumber,
                 Integer pageSize
         ) {
+            String whereCondition;
+            if (searchString == null || searchString.isEmpty())
+                whereCondition = "";
+            else
+                whereCondition = getTagsAndWordsSearchString(searchString, "title", "tags");
 
-            String whereCondition = getTagsAndWordsSearchString(search, "title");
             Long recordsCount = postsRepository.getReconrdsCount(whereCondition);
             int lastPage = (int)Math.ceil((double) recordsCount / pageSize);
             boolean hasPrev = pageNumber != 1;
@@ -46,35 +52,43 @@ import java.util.List;
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
 
-        String getTagsAndWordsSearchString(String search, String searchColumnName) {
-            StringBuilder resultSearchBuilder = new StringBuilder();
-            StringBuilder wordsCollector = new StringBuilder();
-            String[] splitted = search.split("\\s+"); // для пробелов, табов и т.п.
-            String andLikeSearchPattern = "'% AND %s like %'";
-            for (String searchWord : splitted) {
-                if (searchWord.equals("#"))
-                    continue;
-                if (searchWord.startsWith("#")) {
-                    if (!resultSearchBuilder.isEmpty())
-                        resultSearchBuilder.append(String.format(andLikeSearchPattern, searchColumnName));
-                    resultSearchBuilder.append(searchWord.substring(1));
-                    if (!wordsCollector.isEmpty()) {
-                        if (!resultSearchBuilder.isEmpty())
-                            resultSearchBuilder.append(String.format(andLikeSearchPattern, searchColumnName));
-                        resultSearchBuilder.append(wordsCollector);
-                        wordsCollector = new StringBuilder();
-                    }
-                } else
-                    wordsCollector.append(searchWord);
-            }
-            if (!wordsCollector.isEmpty()) {
-                if (!resultSearchBuilder.isEmpty())
-                    resultSearchBuilder.append(String.format(andLikeSearchPattern, searchColumnName));
-                resultSearchBuilder.append(wordsCollector);
-            }
+    public static String getTagsAndWordsSearchString(String searchString, String titleColumnName, String tagsColumnName) {
+        StringBuilder resultSearchBuilder = new StringBuilder();
+        String andWherePart = "%' AND ";
+        String titleWhereCondition = String.format("%s like '%%", titleColumnName);
+        String tagsWhereCondition = String.format("%s like '%%", tagsColumnName);
+        String splittedUnitedWords;
 
-            return resultSearchBuilder.isEmpty() ? "" : " WHERE " + resultSearchBuilder.toString();
+        String splittedTags = Arrays.stream(searchString.split("\\s+")).
+                filter(substr -> substr.startsWith("#") && substr.length() > 1).
+                map(substr -> substr.substring(1)).
+                collect(Collectors.joining(andWherePart + tagsWhereCondition));
+
+        if (splittedTags.isEmpty())
+            splittedUnitedWords = searchString;
+        else {
+            // убирается первое слово в каждом подмассиве, начинающееся с # (как тэг)
+            splittedUnitedWords = Arrays.stream(("#del " + searchString).split("#")).map(substr -> {
+                        String[] substrArr = substr.split("\\s+");// для пробелов, табов и т.п.
+                        if (substrArr.length < 2)
+                            return null;
+                        return String.join(" ", Arrays.copyOfRange(substrArr, 1, substrArr.length));
+                    }).filter(substr -> substr != null && !substr.trim().isEmpty()).
+                    collect(Collectors.joining(andWherePart + titleWhereCondition));
         }
+
+        if (!splittedUnitedWords.isEmpty()) {
+            resultSearchBuilder.append(titleWhereCondition);
+            resultSearchBuilder.append(splittedUnitedWords);
+            resultSearchBuilder.append(andWherePart);
+        }
+        if (!splittedTags.isEmpty()) {
+            resultSearchBuilder.append(tagsWhereCondition);
+            resultSearchBuilder.append(splittedTags);
+            resultSearchBuilder.append("%'");
+        }
+        return resultSearchBuilder.isEmpty() ? "" : " WHERE " + resultSearchBuilder;
+    }
 
 
         public void addPost(Post post) {
