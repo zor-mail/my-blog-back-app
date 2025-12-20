@@ -4,10 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.Post;
+import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.repositories.PostsRepository;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
             this.postsRepository = postsRepository;
         }
 
-        public Post getPost(
+        public PostDTO getPost(
                 Long postId
         ) {
             return postsRepository.getPost(postId);
@@ -48,7 +50,7 @@ import java.util.stream.Collectors;
             long offset = (long) pageSize * (pageNumber - 1);
             if (offset >= recordsCount)
                 return null;
-            List<Post> posts = postsRepository.getPosts(whereCondition, offset);
+            List<PostDTO> posts = postsRepository.getPosts(whereCondition, offset);
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
 
@@ -91,12 +93,15 @@ import java.util.stream.Collectors;
     }
 
 
-        public void addPost(Post post) {
-            postsRepository.addPost(post);
+        public PostDTO addPost(PostDTO post) throws IllegalArgumentException {
+            if (post.getTitle() == null || post.getTitle().isEmpty() ||
+                    post.getText() == null || post.getText().isEmpty())
+                throw new IllegalArgumentException("Отсутствует заголовок и содержимое поста");
+            return postsRepository.addPost(post);
         }
 
-        public void updatePost(Long id, Post post) {
-            postsRepository.updatePost(id, post);
+        public PostDTO updatePost(PostDTO post) {
+            return postsRepository.updatePost(post);
         }
 
         public void deletePost(Long id) {
@@ -106,8 +111,8 @@ import java.util.stream.Collectors;
 
         // Likes
         //==============================================
-        public void addLike(Long postId) {
-            postsRepository.addLike(postId);
+        public Integer addLike(Long postId) {
+            return postsRepository.addLike(postId);
         }
 
 
@@ -133,12 +138,12 @@ import java.util.stream.Collectors;
             return postsRepository.getComments(postId);
         }
 
-        public void addComment(Long postId, Comment comment) {
-            postsRepository.addComment(postId, comment);
+        public Comment addComment(Comment comment) {
+            return postsRepository.addComment(comment);
         }
 
-        public void updateComment(Long commentId, Comment comment) {
-            postsRepository.updateComment(commentId, comment);
+        public Comment updateComment(Comment comment) {
+            return postsRepository.updateComment(comment);
         }
 
         public void deleteComment(Long id) {

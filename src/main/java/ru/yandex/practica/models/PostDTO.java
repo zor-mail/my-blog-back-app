@@ -6,13 +6,11 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @AllArgsConstructor
-public class Post {
+public class PostDTO {
     Long id;
     String title;
     String text;
     String tags;
     Integer likesCount;
-
-    public Post() {
-    }
+    Integer commentsCount;
 }

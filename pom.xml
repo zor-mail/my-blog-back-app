@@ -19,13 +19,13 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>5.11.0</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.junit</groupId>
+            <artifactId>junit-bom</artifactId>
+            <version>5.10.2</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -48,16 +48,23 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.10.0</version> <!-- or any current 5.x+ -->
+      <scope>test</scope>
+    </dependency>
+
   <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>7.0.1</version> <!-- или твоя версия Spring 6/7 -->
+      <version>6.1.12</version> <!-- или твоя версия Spring 6/7 -->
   </dependency>
 
   <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
-      <version>7.0.1</version>
+      <version>6.1.12</version>
   </dependency>
 
   <!-- Servlet API -->
@@ -78,7 +85,7 @@
   <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>7.0.1</version>
+      <version>6.1.12</version>
       <scope>test</scope>
   </dependency>
 

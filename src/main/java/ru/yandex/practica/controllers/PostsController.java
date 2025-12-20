@@ -1,13 +1,16 @@
 package ru.yandex.practica.controllers;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.Post;
+import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.services.PostsService;
 
@@ -23,13 +26,15 @@ public class PostsController {
 
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Post getPost(
+    @ResponseStatus(HttpStatus.OK)
+    public PostDTO getPost(
             @PathVariable(name = "id") Long postId
     ) {
         return postsService.getPost(postId);
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public PostsDTO getPosts(
             @RequestParam("search") String search,
             @RequestParam("pageNumber") Integer pageNumber,
@@ -39,17 +44,20 @@ public class PostsController {
         return postsService.getPosts(search, pageNumber, pageSize);
     }
 
-    @PostMapping
-    public void addPost(@RequestBody Post post) {
-        postsService.addPost(post);
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public PostDTO addPost(@RequestBody PostDTO post) throws IllegalArgumentException {
+        return postsService.addPost(post);
     }
 
-    @PutMapping("/{id}")
-    public void updatePost(@PathVariable(name = "id") Long id, @RequestBody Post post) {
-        postsService.updatePost(id, post);
+    @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public PostDTO updatePost(@PathVariable(name = "id") Long id, @RequestBody PostDTO post) {
+        return postsService.updatePost(post);
     }
 
     @DeleteMapping(value = "/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePost(@PathVariable(name = "id") Long id) {
         postsService.deletePost(id);
     }
@@ -59,14 +67,16 @@ public class PostsController {
     // Likes
     //==============================================
     @PostMapping("/{id}/likes")
-    public void addLike(@PathVariable(name = "id") Long postId) {
-        postsService.addLike(postId);
+    @ResponseStatus(HttpStatus.OK)
+    public Integer addLike(@PathVariable(name = "id") Long postId) {
+        return postsService.addLike(postId);
     }
 
 
     // Images
     //==============================================
     @GetMapping(path="/{id}/image", produces = MediaType.IMAGE_PNG_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public byte[] getImage(
             @PathVariable(name = "id") Long postId
     ) {
@@ -74,7 +84,10 @@ public class PostsController {
     }
 
     @PutMapping("/{id}/image")
-    public void updateImage(@PathVariable(name = "id") Long postId, @RequestBody MultipartFile image) throws IOException {
+    @ResponseStatus(HttpStatus.OK)
+    public void updateImage(
+            @PathVariable(name = "id") Long postId,
+            @RequestBody MultipartFile image) throws IOException {
         postsService.updateImage(postId, image);
     }
 
@@ -82,7 +95,8 @@ public class PostsController {
     // Comments
     //==============================================
 
-    @GetMapping("/{id}/comments/{commentId}")
+    @GetMapping(path="/{id}/comments/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public Comment getComment(
             @PathVariable(name = "id") Long postId,
             @PathVariable(name = "commentId") Long commentId
@@ -90,29 +104,31 @@ public class PostsController {
         return postsService.getComment(commentId);
     }
 
-    @GetMapping("/{id}/comments")
+    @GetMapping(path="/{id}/comments", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
     public List<Comment> getComments(
             @PathVariable(name = "id") Long postId
     ) {
         return postsService.getComments(postId);
     }
 
-    @PostMapping("/{id}/comments")
-    public void addComment(
+    @PostMapping(path = "/{id}/comments", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public Comment addComment(
             @PathVariable(name = "id") Long postId,
             @RequestBody Comment comment) {
-        postsService.addComment(postId, comment);
+        return postsService.addComment(comment);
     }
 
-    @PutMapping("/{id}/comments/{commentId}")
-    public void updateComment(
-            @PathVariable(name = "id") Long postId,
-            @PathVariable(name = "commentId") Long commentId,
+    @PutMapping(path="/{id}/comments/{commentId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public Comment updateComment(
             @RequestBody Comment comment) {
-        postsService.updateComment(commentId, comment);
+        return postsService.updateComment(comment);
     }
 
-    @DeleteMapping(value = "/{id}")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(@PathVariable(name = "id") Long id) {
         postsService.deleteComment(id);
     }

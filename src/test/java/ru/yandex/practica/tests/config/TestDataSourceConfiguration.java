@@ -1,4 +1,4 @@
-package ru.yandex.practica.config;
+package ru.yandex.practica.tests.config;
 
 import org.postgresql.Driver;
 import org.springframework.beans.factory.annotation.Value;

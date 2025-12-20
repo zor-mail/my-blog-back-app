@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Blob;
@@ -11,6 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.Post;
+import ru.yandex.practica.models.PostDTO;
 
 @Repository
 public class JdbcNativePostsRepository implements PostsRepository {
@@ -36,52 +40,91 @@ public class JdbcNativePostsRepository implements PostsRepository {
         return jdbcTemplate.query(
                 "select count(*) as counter from myblog.posts" + searchCondition,
                 (rs, rowNum) -> rs.getLong("counter"), Long.class).
-                stream().findFirst().orElse(null);
+                stream().findFirst().orElse(0L);
     }
 
 
     @Override
-    public Post getPost(Long postId) {
-        return jdbcTemplate.query(
-                "select id, title, text, tags, likes_count from myblog.posts where id = ?",
-                (rs, rowNum) -> new Post(
+    public PostDTO getPost(Long postId) {
+                String selectString =
+                        "SELECT " +
+                                " ps.*," +
+                                " COALESCE(comm.comments_count, 0) AS counter" +
+                                " FROM posts ps" +
+                                " LEFT JOIN (" +
+                                "    SELECT post_id, COUNT(*) AS comments_count" +
+                                "    FROM comments" +
+                                "    GROUP BY post_id" +
+                                ") comm" +
+                                " ON ps.id = comm.post_id" +
+                                " where us.id = ?";
+
+        return jdbcTemplate.query(selectString,
+                (rs, rowNum) -> new PostDTO(
                         rs.getLong("id"),
                         rs.getString("title"),
                         rs.getString("text"),
                         rs.getString("tags"),
-                        rs.getInt("likes_count")
+                        rs.getInt("likes_count"),
+                        rs.getInt("comments_count")
                 ), postId).stream().findFirst().orElse(null);
     }
 
 
     @Override
-    public List<Post> getPosts(
+    public List<PostDTO> getPosts(
             String whereCondition,
             Long offset
     ) {
-        String selectString = String.format("select id, title, text, tags, likes_count from myblog.posts %s OFFSET %d",
+        String selectString = String.format(
+                "SELECT " +
+                        " ps.*," +
+                        " COALESCE(comm.comments_count, 0) AS counter" +
+                        " FROM posts ps" +
+                        " LEFT JOIN (" +
+                        "    SELECT post_id, COUNT(*) AS comments_count" +
+                        "    FROM comments" +
+                        "    GROUP BY post_id" +
+                        ") comm" +
+                        " ON ps.id = comm.post_id" +
+                " %s OFFSET %d",
                 whereCondition, offset);
+
         return jdbcTemplate.query(selectString,
-                (rs, rowNum) -> new Post(
+                (rs, rowNum) -> new PostDTO(
                         rs.getLong("id"),
                         rs.getString("title"),
                         rs.getString("text"),
                         rs.getString("tags"),
-                        rs.getInt("likes_count")
-                ));
+                        rs.getInt("likes_count"),
+                        rs.getInt("comments_count"))
+                );
     }
 
     @Override
-    public void addPost(Post post) {
-        // Формируем insert-запрос с параметрами
-        jdbcTemplate.update("insert into myblog.posts(title, text, tags) values(?, ?, ?, ?)",
-                post.getTitle(), post.getText(), post.getTags());
+    public PostDTO addPost(PostDTO post) {
+        String sqlTemplate = "insert into myblog.posts(title, text, tags) values(?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
+            ps.setString(1, post.getTitle());
+            ps.setString(2, post.getText());
+            String tagsString = String.join(" ", post.getTags());
+            ps.setString(3, tagsString);
+            return ps;
+        }, keyHolder);
+        Long postId = keyHolder.getKey().longValue();
+        post.setId(postId);
+        post.setLikesCount(0);
+        post.setCommentsCount(0);
+        return post;
     }
 
     @Override
-    public void updatePost(Long id, Post post) {
+    public PostDTO updatePost(PostDTO post) {
         jdbcTemplate.update("update myblog.posts set title = ?, text = ?, tags = ? where id = ?",
-                post.getTitle(), post.getText(), post.getTags(), id);
+                post.getTitle(), post.getText(), post.getTags(), post.getId());
+        return post;
     }
 
     @Override
@@ -92,10 +135,19 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     // Likes
     //==============================================
-   public void addLike(Long postId) {
-       jdbcTemplate.update("update myblog.posts set likes_count = likes_count + 1 where post_id = ?",
-               postId);
-   }
+    @Transactional
+    public Integer addLike(Long postId) {
+        jdbcTemplate.update(
+                "update myblog.posts set likes_count = likes_count + 1 where post_id = ?",
+                postId
+        );
+
+        return jdbcTemplate.queryForObject(
+                "select likes_count from myblog.posts where post_id = ?",
+                Integer.class,
+                postId
+        );
+    }
 
 
     // Images
@@ -137,52 +189,30 @@ public class JdbcNativePostsRepository implements PostsRepository {
     }
 
     @Override
-    public void addComment(Long postId, Comment comment) {
-        // Формируем insert-запрос с параметрами
-        jdbcTemplate.update("insert into myblog.comments(post_id, text) values(?, ?)",
-                comment.getPostId(), comment.getText());
+    public Comment addComment(Comment comment) {
+        String sqlTemplate = "insert into myblog.comments(post_id, text) values(?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(con -> {
+            var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
+            ps.setLong(1, comment.getPostId());
+            ps.setString(2, comment.getText());
+            return ps;
+        }, keyHolder);
+        Long commentId = keyHolder.getKey().longValue();
+        comment.setId(commentId);
+        return comment;
     }
 
     @Override
-    public void updateComment(Long commentId, Comment comment) {
-        jdbcTemplate.update("update myblog.comments set post_id = ?, text = ? where id = ?",
-                comment.getPostId(), comment.getText(), commentId);
+    public Comment updateComment(Comment comment) {
+        jdbcTemplate.update("update myblog.comments set text = ? where id = ?",
+                comment.getText(), comment.getId());
+        return comment;
     }
 
     @Override
     public void deleteComment(Long commentId) {
         jdbcTemplate.update("delete from myblog.comments where id = ?", commentId);
     }
-    
-    
-    
-    
-    
-
-
-    /*@ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable("id") Long id) {
-        service.deleteById(id);
-    }
-
-    @PostMapping(path = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> uploadAvatar(@PathVariable("id") Long id,
-                                               @RequestParam("file") MultipartFile file) throws Exception {
-        if (!service.exists(id)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found");
-        }
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("empty file");
-        }
-        boolean ok = service.uploadAvatar(id, file.getBytes());
-        if (!ok) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("failed to update avatar");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body("ok");
-    }*/
-    
-    
-    
-    
 }
 
