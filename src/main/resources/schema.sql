@@ -23,7 +23,7 @@ ALTER TABLE myblog.comments OWNER TO "postgres";
 
 ALTER TABLE ONLY myblog.comments
     ADD CONSTRAINT "posts_comments_fkey" FOREIGN KEY ("post_id")
-    REFERENCES myblog.posts("id");
+    REFERENCES myblog.posts("id") ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS myblog.images (
     id BIGSERIAL PRIMARY KEY,

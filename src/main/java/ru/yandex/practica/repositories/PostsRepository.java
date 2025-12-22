@@ -1,14 +1,12 @@
 package ru.yandex.practica.repositories;
 
 import ru.yandex.practica.models.Comment;
-import ru.yandex.practica.models.Post;
 import ru.yandex.practica.models.PostDTO;
 
-import java.sql.Blob;
 import java.util.List;
 
 public interface PostsRepository {
-    Long getReconrdsCount(String whereCondition);
+    Long getRecordsCount(String whereCondition);
     PostDTO getPost(Long postId);
     List<PostDTO> getPosts(
             String search,

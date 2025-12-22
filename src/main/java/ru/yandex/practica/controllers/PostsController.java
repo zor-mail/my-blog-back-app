@@ -1,6 +1,7 @@
 package ru.yandex.practica.controllers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -36,9 +37,9 @@ public class PostsController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public PostsDTO getPosts(
-            @RequestParam("search") String search,
-            @RequestParam("pageNumber") Integer pageNumber,
-            @RequestParam("pageSize") Integer pageSize
+            @RequestParam(value = "search", required = true) String search,
+            @RequestParam(value = "pageNumber", required = true) Integer pageNumber,
+            @RequestParam(value = "pageSize", required = true) Integer pageSize
 
     ) {
         return postsService.getPosts(search, pageNumber, pageSize);
@@ -57,7 +58,7 @@ public class PostsController {
     }
 
     @DeleteMapping(value = "/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public void deletePost(@PathVariable(name = "id") Long id) {
         postsService.deletePost(id);
     }
@@ -127,8 +128,8 @@ public class PostsController {
         return postsService.updateComment(comment);
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("/{id}/comments/{commentId}")
+    @ResponseStatus(HttpStatus.OK)
     public void deleteComment(@PathVariable(name = "id") Long id) {
         postsService.deleteComment(id);
     }

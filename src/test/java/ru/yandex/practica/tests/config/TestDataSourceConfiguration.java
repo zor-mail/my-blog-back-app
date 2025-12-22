@@ -1,6 +1,5 @@
 package ru.yandex.practica.tests.config;
 
-import org.postgresql.Driver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
@@ -10,6 +9,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.h2.Driver;
 
 import javax.sql.DataSource;
 @PropertySource("classpath:test-application.properties")
@@ -39,7 +39,7 @@ public class TestDataSourceConfiguration {
             DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 
             ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-            populator.addScript(new ClassPathResource("schema.sql"));
+            populator.addScript(new ClassPathResource("test-schema.sql"));
             populator.execute(dataSource);
         }
     }

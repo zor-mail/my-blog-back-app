@@ -1,16 +1,15 @@
 package ru.yandex.practica.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class PostDTO {
     Long id;
     String title;
     String text;
-    String tags;
+    String[] tags;
     Integer likesCount;
     Integer commentsCount;
 }

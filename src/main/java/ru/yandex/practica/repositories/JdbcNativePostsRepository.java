@@ -1,26 +1,14 @@
 package ru.yandex.practica.repositories;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Blob;
+import java.sql.Array;
 import java.util.*;
-import java.util.stream.Collectors;
-
-
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
-import ru.yandex.practica.models.Post;
 import ru.yandex.practica.models.PostDTO;
 
 @Repository
@@ -36,7 +24,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
     //==============================================
 
     @Override
-    public Long getReconrdsCount(String searchCondition) {
+    public Long getRecordsCount(String searchCondition) {
         return jdbcTemplate.query(
                 "select count(*) as counter from myblog.posts" + searchCondition,
                 (rs, rowNum) -> rs.getLong("counter"), Long.class).
@@ -60,14 +48,21 @@ public class JdbcNativePostsRepository implements PostsRepository {
                                 " where us.id = ?";
 
         return jdbcTemplate.query(selectString,
-                (rs, rowNum) -> new PostDTO(
+                (rs, rowNum) -> {
+                    Array sqlArray = rs.getArray("tags");
+                    String[] tagsArray = sqlArray != null
+                            ? (String[]) sqlArray.getArray()
+                            : new String[0];
+                    //List<String> tagsList = List.of(tagsArray);
+            return new PostDTO(
                         rs.getLong("id"),
                         rs.getString("title"),
                         rs.getString("text"),
-                        rs.getString("tags"),
+                        tagsArray,
                         rs.getInt("likes_count"),
                         rs.getInt("comments_count")
-                ), postId).stream().findFirst().orElse(null);
+                );
+            }, postId).stream().findFirst().orElse(null);
     }
 
 
@@ -78,7 +73,11 @@ public class JdbcNativePostsRepository implements PostsRepository {
     ) {
         String selectString = String.format(
                 "SELECT " +
-                        " ps.*," +
+                        " ps.id, " +
+                        " ps.title" +
+                        " left(ps.text, 128) || '...' as text" +
+                        " ps.tags" +
+                        " ps.likes_count," +
                         " COALESCE(comm.comments_count, 0) AS counter" +
                         " FROM posts ps" +
                         " LEFT JOIN (" +
@@ -91,14 +90,21 @@ public class JdbcNativePostsRepository implements PostsRepository {
                 whereCondition, offset);
 
         return jdbcTemplate.query(selectString,
-                (rs, rowNum) -> new PostDTO(
-                        rs.getLong("id"),
-                        rs.getString("title"),
-                        rs.getString("text"),
-                        rs.getString("tags"),
-                        rs.getInt("likes_count"),
-                        rs.getInt("comments_count"))
-                );
+                (rs, rowNum) -> {
+                    Array sqlArray = rs.getArray("tags");
+                    String[] tagsArray = sqlArray != null
+                            ? (String[]) sqlArray.getArray()
+                            : new String[0];
+                    //List<String> tagsList = List.of(tagsArray);
+                    return new PostDTO(
+                            rs.getLong("id"),
+                            rs.getString("title"),
+                            rs.getString("text"),
+                            tagsArray,
+                            rs.getInt("likes_count"),
+                            rs.getInt("comments_count")
+                    );
+                });
     }
 
     @Override

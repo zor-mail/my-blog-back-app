@@ -3,15 +3,11 @@ package ru.yandex.practica.services;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
-import ru.yandex.practica.models.Post;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.repositories.PostsRepository;
 
 import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.sql.Blob;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,7 +39,7 @@ import java.util.stream.Collectors;
             else
                 whereCondition = getTagsAndWordsSearchString(searchString, "title", "tags");
 
-            Long recordsCount = postsRepository.getReconrdsCount(whereCondition);
+            Long recordsCount = postsRepository.getRecordsCount(whereCondition);
             int lastPage = (int)Math.ceil((double) recordsCount / pageSize);
             boolean hasPrev = pageNumber != 1;
             boolean hasNext = pageNumber < lastPage;

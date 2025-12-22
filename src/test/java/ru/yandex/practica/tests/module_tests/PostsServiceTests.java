@@ -14,7 +14,7 @@ import ru.yandex.practica.services.PostsService;
 
 import java.io.InvalidObjectException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
@@ -36,26 +36,31 @@ public class PostsServiceTests {
 
       @Test
         void testAddPost_success() throws IllegalArgumentException {
-            PostDTO validPost = new PostDTO(1L, "Test Order", "Check ok status", "#test #moduletest", 0);
+            String[] tagsArray = new String[]{"#test", "#moduletest"};
+            PostDTO validPost = new PostDTO(null, "Test Order", "Check ok status", tagsArray, 0, 0);
+            PostDTO validSaved = new PostDTO(1L, "Test Order", "Check ok status", tagsArray, 0, 0);
 
-            // Проверка вызова метода
-            doNothing().when(postsRepository).addPost(validPost);
+            when(postsRepository.addPost(validPost)).thenReturn(validSaved);
+            PostDTO result = postsService.addPost(validPost);
 
-            // Выполнение метода
-            postsService.addPost(validPost);
+            assertNotNull(result);
+            assertEquals(result.getText(), validPost.getText());
+            assertEquals(result.getTitle(), validPost.getTitle());
 
-            // Проверка вызовов
-            verify(postsRepository, times(1)).addPost(validPost);
+          verify(postsRepository, times(1)).addPost(validPost);
         }
 
           @Test
         void testAddPost_validationFailure() {
-            PostDTO invalidPost = new PostDTO(2L, null, "Check ok status", null, -1);
+            PostDTO invalidPost = new PostDTO(2L, null, "Check ok status", null, -1, 0);
 
             // Проверка выброса исключения
             assertThrows(IllegalArgumentException.class, () -> postsService.addPost(invalidPost));
 
-            // Убедимся, что save и log не были вызваны
+            // Метод не был вызван
             verify(postsRepository, never()).addPost(invalidPost);
         }
+
+
+
     }
