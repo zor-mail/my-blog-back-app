@@ -8,9 +8,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 @Configuration
 public class RestConfiguration {
 
-    @Bean
-    public HttpMessageConverter<Object> httpMessageConverter() {
-        return new MappingJackson2HttpMessageConverter();
-    }
+
 
 }

@@ -1,7 +1,8 @@
-package ru.yandex.practica.tests.config;
+package ru.yandex.practica.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -10,8 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.h2.Driver;
-
 import javax.sql.DataSource;
+
+@Configuration
 @PropertySource("classpath:test-application.properties")
 public class TestDataSourceConfiguration {
         @Bean

@@ -1,4 +1,4 @@
-package ru.yandex.practica.tests.config;
+package ru.yandex.practica.config;
 
 import org.mockito.Mockito;
 import org.springframework.context.annotation.*;
@@ -6,7 +6,7 @@ import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
 
 @Configuration
-@ComponentScan("ru.yandex.practica.tests")
+// @ComponentScan("ru.yandex.practica.tests")
 public class TestsConfiguration {
 
     @Bean

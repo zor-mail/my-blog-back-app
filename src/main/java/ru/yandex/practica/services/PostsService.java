@@ -39,14 +39,22 @@ import java.util.stream.Collectors;
             else
                 whereCondition = getTagsAndWordsSearchString(searchString, "title", "tags");
 
+            System.out.println("######## Where = " + whereCondition);
+
             Long recordsCount = postsRepository.getRecordsCount(whereCondition);
             int lastPage = (int)Math.ceil((double) recordsCount / pageSize);
             boolean hasPrev = pageNumber != 1;
             boolean hasNext = pageNumber < lastPage;
             long offset = (long) pageSize * (pageNumber - 1);
+
+            System.out.println("######## Params = " + whereCondition);
+
             if (offset >= recordsCount)
                 return null;
+
+            System.out.println("######## Where = " + whereCondition);
             List<PostDTO> posts = postsRepository.getPosts(whereCondition, offset);
+            System.out.println("######## posts = " + posts.isEmpty() + " " + (posts.isEmpty() ? posts.size() : 0));
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
 

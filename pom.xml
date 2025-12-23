@@ -63,6 +63,13 @@
       </dependency>
 
       <dependency>
+          <groupId>com.jayway.jsonpath</groupId>
+          <artifactId>json-path</artifactId>
+          <version>2.9.0</version> <!-- или версия, рекомендованная твоим spring-boot -->
+          <scope>test</scope>
+      </dependency>
+
+      <dependency>
           <groupId>org.springframework</groupId>
           <artifactId>spring-web</artifactId>
           <version>6.1.12</version> <!-- или твоя версия Spring 6/7 -->

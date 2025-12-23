@@ -45,7 +45,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
                                 "    GROUP BY post_id" +
                                 ") comm" +
                                 " ON ps.id = comm.post_id" +
-                                " where us.id = ?";
+                                " where ps.id = ?";
 
         return jdbcTemplate.query(selectString,
                 (rs, rowNum) -> {
@@ -74,11 +74,11 @@ public class JdbcNativePostsRepository implements PostsRepository {
         String selectString = String.format(
                 "SELECT " +
                         " ps.id, " +
-                        " ps.title" +
-                        " left(ps.text, 128) || '...' as text" +
-                        " ps.tags" +
+                        " ps.title," +
+                        " left(ps.text, 128) || '...' as text," +
+                        " ps.tags," +
                         " ps.likes_count," +
-                        " COALESCE(comm.comments_count, 0) AS counter" +
+                        " COALESCE(comm.comments_count, 0) AS comments_count" +
                         " FROM posts ps" +
                         " LEFT JOIN (" +
                         "    SELECT post_id, COUNT(*) AS comments_count" +
@@ -109,14 +109,16 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     @Override
     public PostDTO addPost(PostDTO post) {
-        String sqlTemplate = "insert into myblog.posts(title, text, tags) values(?, ?, ?, ?)";
+        String sqlTemplate = "insert into myblog.posts(title, text, tags) values(?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
             var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
             ps.setString(1, post.getTitle());
             ps.setString(2, post.getText());
-            String tagsString = String.join(" ", post.getTags());
-            ps.setString(3, tagsString);
+            // String tagsString = String.join(" ", post.getTags());
+            String[] tags = post.getTags();
+            Array tagsArray = ps.getConnection().createArrayOf("VARCHAR", tags);
+            ps.setArray(3, tagsArray);
             return ps;
         }, keyHolder);
         Long postId = keyHolder.getKey().longValue();
@@ -128,8 +130,19 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     @Override
     public PostDTO updatePost(PostDTO post) {
-        jdbcTemplate.update("update myblog.posts set title = ?, text = ?, tags = ? where id = ?",
-                post.getTitle(), post.getText(), post.getTags(), post.getId());
+        String sqlTemplate = "update myblog.posts set title = ?, text = ?, tags = ? where id = ?";
+
+        jdbcTemplate.update(con -> {
+            var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
+            ps.setString(1, post.getTitle());
+            ps.setString(2, post.getText());
+            // String tagsString = String.join(" ", post.getTags());
+            String[] tags = post.getTags();
+            Array tagsArray = ps.getConnection().createArrayOf("VARCHAR", tags);
+            ps.setArray(3, tagsArray);
+            ps.setLong(4, post.getId());
+            return ps;
+        });
         return post;
     }
 

@@ -1,4 +1,4 @@
-package ru.yandex.practica.tests.module_tests;
+package ru.yandex.practica.module_tests;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,12 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import ru.yandex.practica.models.PostDTO;
-import ru.yandex.practica.tests.config.TestsConfiguration;
-import ru.yandex.practica.models.Post;
+import ru.yandex.practica.config.TestsConfiguration;
 import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
-
-import java.io.InvalidObjectException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
