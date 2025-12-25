@@ -41,6 +41,7 @@ public class TestDataSourceConfiguration {
             DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 
             ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+            populator.setSqlScriptEncoding("UTF-8");
             populator.addScript(new ClassPathResource("test-schema.sql"));
             populator.execute(dataSource);
         }

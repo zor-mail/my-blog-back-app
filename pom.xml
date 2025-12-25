@@ -106,14 +106,13 @@
       <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.7.3</version> <!-- актуальная версия, можно обновить при необходимости -->
+          <version>42.7.3</version>
       </dependency>
 
       <dependency>
           <groupId>com.h2database</groupId>
           <artifactId>h2</artifactId>
-          <version>2.2.224</version> <!-- Используйте актуальную версию -->
-          <scope>runtime</scope> <!-- Или <scope>test</scope> если только для тестов -->
+          <version>2.2.224</version>
       </dependency>
 
       <dependency>

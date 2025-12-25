@@ -41,6 +41,7 @@ public class DataSourceConfiguration {
             DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 
             ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+            populator.setSqlScriptEncoding("UTF-8");
             populator.addScript(new ClassPathResource("schema.sql"));
             populator.execute(dataSource);
         }

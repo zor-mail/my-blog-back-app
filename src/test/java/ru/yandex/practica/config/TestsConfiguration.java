@@ -6,7 +6,6 @@ import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
 
 @Configuration
-// @ComponentScan("ru.yandex.practica.tests")
 public class TestsConfiguration {
 
     @Bean
