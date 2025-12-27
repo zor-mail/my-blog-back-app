@@ -1,7 +1,5 @@
 package ru.yandex.practica.controllers;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -10,7 +8,6 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practica.models.Comment;
-import ru.yandex.practica.models.Post;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.services.PostsService;
@@ -76,19 +73,27 @@ public class PostsController {
 
     // Images
     //==============================================
-    @GetMapping(path="/{id}/image", produces = MediaType.IMAGE_PNG_VALUE)
-    @ResponseStatus(HttpStatus.OK)
-    public byte[] getImage(
-            @PathVariable(name = "id") Long postId
-    ) {
-        return postsService.getImage(postId);
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getImage(
+            @PathVariable("id") Long postId) {
+        byte[] image = postsService.getImage(postId);
+        System.out.println("image class = " + image.getClass());
+        if (image == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .cacheControl(CacheControl.noStore())
+                .body(image);
     }
 
-    @PutMapping("/{id}/image")
+    @PutMapping(path="/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public void updateImage(
             @PathVariable(name = "id") Long postId,
-            @RequestBody MultipartFile image) throws IOException {
+            @RequestParam("file") MultipartFile image) throws IOException {
         postsService.updateImage(postId, image);
     }
 

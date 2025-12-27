@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
                 return null;
 
             System.out.println("######## Where = " + whereCondition);
-            List<PostDTO> posts = postsRepository.getPosts(whereCondition, offset);
+            List<PostDTO> posts = postsRepository.getPosts(whereCondition, pageSize, offset);
             System.out.println("######## posts = " + posts.isEmpty() + " " + (posts.isEmpty() ? posts.size() : 0));
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
@@ -61,8 +61,8 @@ import java.util.stream.Collectors;
     public static String getTagsAndWordsSearchString(String searchString, String titleColumnName, String tagsColumnName) {
         StringBuilder resultSearchBuilder = new StringBuilder();
         String andWherePart = "%' AND ";
-        String titleWhereCondition = String.format("%s like '%%", titleColumnName);
-        String tagsWhereCondition = String.format("%s like '%%", tagsColumnName);
+        String titleWhereCondition = String.format("lower(%s) like '%%", titleColumnName);
+        String tagsWhereCondition = String.format("lower(%s) like '%%", tagsColumnName);
         String splittedUnitedWords;
 
         String splittedTags = Arrays.stream(searchString.split("\\s+")).
@@ -80,15 +80,17 @@ import java.util.stream.Collectors;
                             return null;
                         return String.join(" ", Arrays.copyOfRange(substrArr, 1, substrArr.length));
                     }).filter(substr -> substr != null && !substr.trim().isEmpty()).
+                    map(String::toLowerCase).
                     collect(Collectors.joining(andWherePart + titleWhereCondition));
         }
 
         if (!splittedUnitedWords.isEmpty()) {
             resultSearchBuilder.append(titleWhereCondition);
             resultSearchBuilder.append(splittedUnitedWords);
-            resultSearchBuilder.append(andWherePart);
+            resultSearchBuilder.append("%'");
         }
         if (!splittedTags.isEmpty()) {
+            resultSearchBuilder.append(" AND ");
             resultSearchBuilder.append(tagsWhereCondition);
             resultSearchBuilder.append(splittedTags);
             resultSearchBuilder.append("%'");
@@ -99,8 +101,9 @@ import java.util.stream.Collectors;
 
         public PostDTO addPost(PostDTO post) throws IllegalArgumentException {
             if (post.getTitle() == null || post.getTitle().isEmpty() ||
-                    post.getText() == null || post.getText().isEmpty())
-                throw new IllegalArgumentException("Отсутствует заголовок и содержимое поста");
+                    post.getText() == null || post.getText().isEmpty() ||
+                    post.getTags() == null || post.getTags().length == 0)
+                throw new IllegalArgumentException("Отсутствует заголовок, содержимое поста или тэги поста");
             return postsRepository.addPost(post);
         }
 
@@ -129,7 +132,8 @@ import java.util.stream.Collectors;
         public void updateImage(Long postId, MultipartFile image) throws IOException {
             if (image == null)
                 return;
-            postsRepository.updateImage(postId, image.getBytes());
+            String fileName = image.getOriginalFilename();
+            postsRepository.updateImage(postId, fileName, image.getBytes());
         }
 
         // Comments

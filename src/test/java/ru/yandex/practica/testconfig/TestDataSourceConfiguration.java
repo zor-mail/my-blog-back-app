@@ -1,4 +1,4 @@
-package ru.yandex.practica.config;
+package ru.yandex.practica.testconfig;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

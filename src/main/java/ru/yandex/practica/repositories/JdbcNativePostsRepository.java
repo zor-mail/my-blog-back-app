@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.Array;
 import java.util.*;
+
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
@@ -25,10 +26,8 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     @Override
     public Long getRecordsCount(String searchCondition) {
-        return jdbcTemplate.query(
-                "select count(*) as counter from myblog.posts" + searchCondition,
-                (rs, rowNum) -> rs.getLong("counter"), Long.class).
-                stream().findFirst().orElse(0L);
+        return jdbcTemplate.queryForObject(
+                "select count(*) as counter from myblog.posts" + searchCondition, Long.class);
     }
 
 
@@ -37,38 +36,41 @@ public class JdbcNativePostsRepository implements PostsRepository {
                 String selectString =
                         "SELECT " +
                                 " ps.*," +
-                                " COALESCE(comm.comments_count, 0) AS counter" +
-                                " FROM posts ps" +
+                                " COALESCE(comm.comments_count, 0) AS comments_count" +
+                                " FROM myblog.posts ps" +
                                 " LEFT JOIN (" +
                                 "    SELECT post_id, COUNT(*) AS comments_count" +
-                                "    FROM comments" +
+                                "    FROM myblog.comments" +
                                 "    GROUP BY post_id" +
                                 ") comm" +
                                 " ON ps.id = comm.post_id" +
                                 " where ps.id = ?";
 
-        return jdbcTemplate.query(selectString,
+        return jdbcTemplate.queryForObject(selectString,
                 (rs, rowNum) -> {
-                    Array sqlArray = rs.getArray("tags");
-                    String[] tagsArray = sqlArray != null
-                            ? (String[]) sqlArray.getArray()
-                            : new String[0];
-                    //List<String> tagsList = List.of(tagsArray);
-            return new PostDTO(
-                        rs.getLong("id"),
-                        rs.getString("title"),
-                        rs.getString("text"),
-                        tagsArray,
-                        rs.getInt("likes_count"),
-                        rs.getInt("comments_count")
-                );
-            }, postId).stream().findFirst().orElse(null);
+                    String tagsStr = rs.getString("tags"); // "#Питер,#белыеночи"
+                    String[] tagsArray = tagsStr == null || tagsStr.isBlank()
+                            ? new String[0]
+                            : tagsStr.split(",");
+                    tagsArray = Arrays.stream(tagsArray)
+                            .map(String::trim)
+                            .toArray(String[]::new);
+                    return new PostDTO(
+                            rs.getLong("id"),
+                            rs.getString("title"),
+                            rs.getString("text"),
+                            tagsArray,
+                            rs.getInt("likes_count"),
+                            rs.getInt("comments_count")
+                    );
+                }, postId);
     }
 
 
     @Override
     public List<PostDTO> getPosts(
             String whereCondition,
+            Integer pageSize,
             Long offset
     ) {
         String selectString = String.format(
@@ -79,32 +81,34 @@ public class JdbcNativePostsRepository implements PostsRepository {
                         " ps.tags," +
                         " ps.likes_count," +
                         " COALESCE(comm.comments_count, 0) AS comments_count" +
-                        " FROM posts ps" +
+                        " FROM myblog.posts ps" +
                         " LEFT JOIN (" +
                         "    SELECT post_id, COUNT(*) AS comments_count" +
-                        "    FROM comments" +
+                        "    FROM myblog.comments" +
                         "    GROUP BY post_id" +
                         ") comm" +
                         " ON ps.id = comm.post_id" +
-                " %s OFFSET %d",
-                whereCondition, offset);
+                " %s LIMIT ? OFFSET ?", whereCondition);
 
         return jdbcTemplate.query(selectString,
                 (rs, rowNum) -> {
-                    Array sqlArray = rs.getArray("tags");
-                    String[] tagsArray = sqlArray != null
-                            ? (String[]) sqlArray.getArray()
-                            : new String[0];
-                    //List<String> tagsList = List.of(tagsArray);
-                    return new PostDTO(
-                            rs.getLong("id"),
-                            rs.getString("title"),
-                            rs.getString("text"),
-                            tagsArray,
-                            rs.getInt("likes_count"),
-                            rs.getInt("comments_count")
-                    );
-                });
+                    String tagsStr = rs.getString("tags"); // "#Питер,#белыеночи"
+                    String[] tagsArray = tagsStr == null || tagsStr.isBlank()
+                            ? new String[0]
+                            : tagsStr.split(",");
+                    tagsArray = Arrays.stream(tagsArray)
+                            .map(String::trim)
+                            .toArray(String[]::new);
+                        return new PostDTO(
+                                rs.getLong("id"),
+                                rs.getString("title"),
+                                rs.getString("text"),
+                                tagsArray,
+                                rs.getInt("likes_count"),
+                                rs.getInt("comments_count")
+                        );
+                }, pageSize, offset
+        );
     }
 
     @Override
@@ -115,10 +119,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
             var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
             ps.setString(1, post.getTitle());
             ps.setString(2, post.getText());
-            // String tagsString = String.join(" ", post.getTags());
-            String[] tags = post.getTags();
-            Array tagsArray = ps.getConnection().createArrayOf("VARCHAR", tags);
-            ps.setArray(3, tagsArray);
+            ps.setString(3, String.join(",", post.getTags()));
             return ps;
         }, keyHolder);
         Long postId = keyHolder.getKey().longValue();
@@ -136,10 +137,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
             var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
             ps.setString(1, post.getTitle());
             ps.setString(2, post.getText());
-            // String tagsString = String.join(" ", post.getTags());
-            String[] tags = post.getTags();
-            Array tagsArray = ps.getConnection().createArrayOf("VARCHAR", tags);
-            ps.setArray(3, tagsArray);
+            ps.setString(3, String.join(",", post.getTags()));
             ps.setLong(4, post.getId());
             return ps;
         });
@@ -172,14 +170,26 @@ public class JdbcNativePostsRepository implements PostsRepository {
     // Images
     //==============================================
     public byte[] getImage(Long postId) {
-        return jdbcTemplate.query("select image from myblog.images where post_id = ?",
-                (rs, rowNum) ->  rs.getBytes("image"),
-                postId).stream().findFirst().orElse(null);
+        return jdbcTemplate.queryForObject(
+                "select image from myblog.images where post_id = ?",
+                (rs, rowNum) -> rs.getBytes("image"),
+                postId
+        );
     }
 
-    public void updateImage(Long postId, byte[] imageBytes) {
-            jdbcTemplate.update("update myblog.images set image = ? where post_id = ?",
-                    imageBytes, postId);
+    public void updateImage(Long postId, String fileName, byte[] imageBytes) {
+
+        int rows = jdbcTemplate.update(
+                "update myblog.images set filename = ?, image = ? where post_id = ?",
+                fileName, imageBytes, postId
+        );
+
+        if (rows == 0) {
+            jdbcTemplate.update(
+                    "insert into myblog.images (post_id, filename, image) values (?, ?, ?)",
+                    postId, fileName, imageBytes
+            );
+        }
     }
 
     // Comments
@@ -187,13 +197,13 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     @Override
     public Comment getComment(Long commentId) {
-        return jdbcTemplate.query(
+        return jdbcTemplate.queryForObject(
                 "select id, post_id, text from myblog.comments where id = ?",
                 (rs, rowNum) -> new Comment(
                         rs.getLong("id"),
                         rs.getLong("post_id"),
                         rs.getString("text")
-                ), commentId).stream().findFirst().orElse(null);
+                ), commentId);
     }
 
     @Override

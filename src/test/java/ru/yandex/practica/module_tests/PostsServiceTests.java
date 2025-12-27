@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import ru.yandex.practica.models.PostDTO;
-import ru.yandex.practica.config.TestsConfiguration;
+import ru.yandex.practica.testconfig.TestsConfiguration;
 import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

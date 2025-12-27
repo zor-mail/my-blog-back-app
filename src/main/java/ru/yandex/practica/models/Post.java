@@ -10,7 +10,7 @@ public class Post {
     Long id;
     String title;
     String text;
-    String tags;
+    String[] tags;
     Integer likesCount;
 
     public Post() {
