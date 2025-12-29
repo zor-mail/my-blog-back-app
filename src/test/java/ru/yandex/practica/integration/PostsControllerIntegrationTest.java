@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import ru.yandex.practica.config.DataSourceConfiguration;
 import ru.yandex.practica.config.WebConfiguration;
+import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.testconfig.TestDataSourceConfiguration;
 import ru.yandex.practica.testconfig.TestWebConfiguration;
@@ -74,17 +75,17 @@ class PostsControllerIntegrationTest {
 
 
         jdbcTemplate.execute("""
-                    INSERT INTO myblog.comments (post_id, text)
-                    VALUES (4,'Крута гора Фудзи...')
+                    INSERT INTO myblog.comments (id, post_id, text)
+                    VALUES (400, 4,'Крута гора Фудзи...')
                 """);
         jdbcTemplate.execute("""
-                    INSERT INTO myblog.comments (post_id, text)
-                    VALUES (4,'Круто, Улитка, ползи!')
+                    INSERT INTO myblog.comments (id, post_id, text)
+                    VALUES (401, 4,'Круто, Улитка, ползи!')
                 """);
 
         jdbcTemplate.execute("""
-                    INSERT INTO myblog.comments (post_id, text)
-                    VALUES (5,'Питер крут, Питеру виват!')
+                    INSERT INTO myblog.comments (id, post_id, text)
+                    VALUES (402, 5,'Питер крут, Питеру виват!')
                 """);
     }
 
@@ -99,7 +100,7 @@ class PostsControllerIntegrationTest {
                 .param("pageNumber", "1")
                 .param("pageSize", "10")
                 .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
+                // .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts[0].title").value("Зимний вид на гору Фудзи"))
                 //.andExpect(jsonPath("$.posts[1].title").value("Зимний дворец"))
@@ -155,15 +156,15 @@ class PostsControllerIntegrationTest {
     }
 
     @Test
-    void deletePost_noContent() throws Exception {
-        mockMvc.perform(delete("/posts/4"))
+    void deletePost_success() throws Exception {
+        mockMvc.perform(delete("/posts/{id}", 4))
                 .andExpect(status().isOk());
 
         var result = mockMvc.perform(get("/posts")
                         .characterEncoding("UTF-8")
-                .param("search", "")
-                .param("pageNumber", "1")
-                .param("pageSize", "10"))
+                        .param("search", "зимний")
+                        .param("pageNumber", "1")
+                        .param("pageSize", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts", hasSize(1)))
                 .andReturn();
@@ -173,14 +174,21 @@ class PostsControllerIntegrationTest {
     }
 
     @Test
-    void getImage_success() throws Exception {
-        File image = new File("./src/test/resources/Files/nature.jpg");
+    void deletePost_notFound() throws Exception {
+        mockMvc.perform(delete("/posts/{id}", 44))
+                .andExpect(status().isNotFound());
 
-        mockMvc.perform(get("/posts/{id}/image", 4L))
+        var result = mockMvc.perform(get("/posts")
+                        .characterEncoding("UTF-8")
+                        .param("search", "зимний")
+                        .param("pageNumber", "1")
+                        .param("pageSize", "10"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.IMAGE_JPEG))
-                .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(content().bytes(Files.readAllBytes(image.toPath())));
+                .andExpect(jsonPath("$.posts", hasSize(2)))
+                .andReturn();
+        System.out.println("###########  Delete Post ############");
+        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
     }
 
 
@@ -196,36 +204,149 @@ class PostsControllerIntegrationTest {
 
         mockMvc.perform(multipart("/posts/{id}/image", 4L)
                         .file(multipartFile)
-                        .with(request -> { request.setMethod("PUT"); return request; }))
+                        .with(request -> { request.setMethod("PUT"); return request; })
+                .characterEncoding("UTF-8"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/posts/{id}/image", 4L))
-                .andDo(print())
-                .andExpect(status().isOk());
-
-/*        mockMvc.perform(get("/posts/{id}/image", 4L))
-                .andDo(print())
+        mockMvc.perform(get("/posts/{id}/image", 4L)
+                        .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG))
-                .andExpect(content().bytes(Files.readAllBytes(image.toPath())));*/
-
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(content().bytes(Files.readAllBytes(image.toPath())));
     }
 
     @Test
     void uploadImage_emptyFile_badRequest() throws Exception {
         MockMultipartFile empty = new MockMultipartFile("file", "empty.jpg", "image/jpeg", new byte[0]);
 
-        mockMvc.perform(multipart("/posts/{id}/image", 1L).file(empty))
+        mockMvc.perform(multipart("/posts/{id}/image", 1L).
+                        file(empty)
+                .with(req -> { req.setMethod("PUT"); return req; })
+                .characterEncoding("UTF-8"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("empty file"));
     }
 
+
     @Test
-    void uploadImage_userNotFound_404() throws Exception {
+    void uploadImage_imageNotFound_404() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "testFile.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
-        mockMvc.perform(multipart("/posts/{id}/image", 333L).file(file))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("post not found"));
+        mockMvc.perform(multipart("/posts/{id}/image", 44L)
+                .file(file)
+                .with(req -> { req.setMethod("PUT"); return req; })
+                .characterEncoding("UTF-8"))
+                .andExpect(status().isNotFound());
     }
+
+
+
+
+
+
+
+
+    @Test
+    void getComment_returnsJson() throws Exception {
+
+        var result = mockMvc.perform(get("/posts/{id}/comments/{commentId}", 4L, 401L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                        .accept(MediaType.APPLICATION_JSON))
+                // .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("Круто, Улитка, ползи!"));
+
+        System.out.println("###########  Comments ############");
+        String body = result.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
+
+    }
+
+    @Test
+    void getComments_returnsJsonArray() throws Exception {
+
+        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                        .accept(MediaType.APPLICATION_JSON))
+                // .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].text").value("Крута гора Фудзи..."));
+
+        System.out.println("###########  Comments ############");
+        String body = result.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
+
+    }
+
+    @Test
+    void createComment_acceptsJson_andPersists() throws Exception {
+        String json = """
+                      {
+                        "text": "Белые ночи",
+                        "postId": 4
+                      }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/posts/{id}/comments", 5)
+                        .characterEncoding("UTF-8")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.text").value("Белые ночи"))
+                .andReturn();
+
+        String responseJson = result.getResponse().getContentAsString();
+
+        ObjectMapper mapper = new ObjectMapper();
+        Comment commentObject = mapper.readValue(responseJson, Comment.class);
+        Assertions.assertNotNull(commentObject);
+
+        Long newCommentId = commentObject.getId();
+
+
+        var result2 = mockMvc.perform(get("/posts/{id}/comments/{commentId}", 5, newCommentId)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("Белые ночи"));
+
+        System.out.println("###########  Create Comment ############");
+        String body = result2.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
+    }
+
+    @Test
+    void deleteComment_success() throws Exception {
+        mockMvc.perform(delete("/posts/{id}/comments/{commentId}", 4L, 400))
+                .andExpect(status().isOk());
+
+        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andReturn();
+        System.out.println("###########  Delete Comment ############");
+        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
+    }
+
+    @Test
+    void deleteComment_notFound() throws Exception {
+        mockMvc.perform(delete("/posts/{id}/comments/{commentId}", 4L, 405))
+                .andExpect(status().isNotFound());
+
+        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andReturn();
+        System.out.println("###########  Delete Comment ############");
+        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+        System.out.println(body);
+    }
+    
 }

@@ -111,8 +111,8 @@ import java.util.stream.Collectors;
             return postsRepository.updatePost(post);
         }
 
-        public void deletePost(Long id) {
-            postsRepository.deletePost(id);
+        public Integer deletePost(Long id) {
+            return postsRepository.deletePost(id);
         }
 
 
@@ -129,11 +129,9 @@ import java.util.stream.Collectors;
             return postsRepository.getImage(postId);
         }
 
-        public void updateImage(Long postId, MultipartFile image) throws IOException {
-            if (image == null)
-                return;
+        public Integer updateImage(Long postId, MultipartFile image) throws IOException {
             String fileName = image.getOriginalFilename();
-            postsRepository.updateImage(postId, fileName, image.getBytes());
+            return postsRepository.updateImage(postId, fileName, image.getBytes());
         }
 
         // Comments
@@ -147,6 +145,8 @@ import java.util.stream.Collectors;
         }
 
         public Comment addComment(Comment comment) {
+            if (comment.getText() == null || comment.getText().isBlank())
+                throw new IllegalArgumentException("Отсутствует содержимое комментария");
             return postsRepository.addComment(comment);
         }
 
@@ -154,8 +154,8 @@ import java.util.stream.Collectors;
             return postsRepository.updateComment(comment);
         }
 
-        public void deleteComment(Long id) {
-            postsRepository.deleteComment(id);
+        public Integer deleteComment(Long id) {
+            return postsRepository.deleteComment(id);
         }
 
     }

@@ -145,8 +145,8 @@ public class JdbcNativePostsRepository implements PostsRepository {
     }
 
     @Override
-    public void deletePost(Long id) {
-        jdbcTemplate.update("delete from myblog.posts where id = ?", id);
+    public Integer deletePost(Long id) {
+        return jdbcTemplate.update("delete from myblog.posts where id = ?", id);
     }
 
 
@@ -170,14 +170,24 @@ public class JdbcNativePostsRepository implements PostsRepository {
     // Images
     //==============================================
     public byte[] getImage(Long postId) {
-        return jdbcTemplate.queryForObject(
+        List<byte[]> list = jdbcTemplate.query(
                 "select image from myblog.images where post_id = ?",
                 (rs, rowNum) -> rs.getBytes("image"),
                 postId
         );
+        return list.isEmpty() ? null : list.getFirst();
     }
 
-    public void updateImage(Long postId, String fileName, byte[] imageBytes) {
+    public Integer updateImage(Long postId, String fileName, byte[] imageBytes) {
+
+        Integer rowsCount = jdbcTemplate.queryForObject(
+                "select count(*) from myblog.posts where id = ?",
+                Integer.class,
+                postId
+        );
+
+        if (rowsCount == null || rowsCount == 0)
+            return null;
 
         int rows = jdbcTemplate.update(
                 "update myblog.images set filename = ?, image = ? where post_id = ?",
@@ -185,11 +195,12 @@ public class JdbcNativePostsRepository implements PostsRepository {
         );
 
         if (rows == 0) {
-            jdbcTemplate.update(
+            rows = jdbcTemplate.update(
                     "insert into myblog.images (post_id, filename, image) values (?, ?, ?)",
                     postId, fileName, imageBytes
             );
         }
+        return rows;
     }
 
     // Comments
@@ -209,10 +220,10 @@ public class JdbcNativePostsRepository implements PostsRepository {
     @Override
     public List<Comment> getComments(Long postId) {
         return jdbcTemplate.query(
-                "select id, title, text from myblog.comments where post_id = ?",
+                "select id, post_id, text from myblog.comments where post_id = ?",
                 (rs, rowNum) -> new Comment(
                         rs.getLong("id"),
-                        rs.getLong("postId"),
+                        rs.getLong("post_id"),
                         rs.getString("text")
                 ), postId);
     }
@@ -240,8 +251,8 @@ public class JdbcNativePostsRepository implements PostsRepository {
     }
 
     @Override
-    public void deleteComment(Long commentId) {
-        jdbcTemplate.update("delete from myblog.comments where id = ?", commentId);
+    public Integer deleteComment(Long commentId) {
+        return jdbcTemplate.update("delete from myblog.comments where id = ?", commentId);
     }
 }
 

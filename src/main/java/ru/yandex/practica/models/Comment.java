@@ -1,12 +1,12 @@
 package ru.yandex.practica.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class Comment {
-   long id;
-   long postId;
+   Long id;
+   Long postId;
    String text;
 }

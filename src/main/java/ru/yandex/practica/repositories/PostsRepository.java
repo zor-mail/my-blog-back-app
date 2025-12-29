@@ -14,15 +14,15 @@ public interface PostsRepository {
             Integer pageSize,
             Long offset);
     PostDTO addPost(PostDTO post);
-    void deletePost(Long id);
+    Integer deletePost(Long id);
     PostDTO updatePost(PostDTO post);
     Integer addLike(Long postId);
     byte[] getImage(Long postId);
-    void updateImage(Long postId, String fileName, byte[] imageBytes);
+    Integer updateImage(Long postId, String fileName, byte[] imageBytes);
 
     Comment getComment(Long commentId);
     List<Comment> getComments(Long postId);
     Comment addComment(Comment comment);
-    void deleteComment(Long commentId);
+    Integer deleteComment(Long commentId);
     Comment updateComment(Comment comment);
 }

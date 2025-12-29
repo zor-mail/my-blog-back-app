@@ -7,6 +7,7 @@ import java.io.InvalidObjectException;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.models.PostsDTO;
@@ -57,7 +58,9 @@ public class PostsController {
     @DeleteMapping(value = "/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void deletePost(@PathVariable(name = "id") Long id) {
-        postsService.deletePost(id);
+        int deleted = postsService.deletePost(id);
+        if (deleted == 0)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found");
     }
 
 
@@ -77,7 +80,6 @@ public class PostsController {
     public ResponseEntity<byte[]> getImage(
             @PathVariable("id") Long postId) {
         byte[] image = postsService.getImage(postId);
-        System.out.println("image class = " + image.getClass());
         if (image == null) {
             return ResponseEntity.notFound().build();
         }
@@ -91,10 +93,16 @@ public class PostsController {
 
     @PutMapping(path="/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public void updateImage(
+    public ResponseEntity<String> updateImage(
             @PathVariable(name = "id") Long postId,
             @RequestParam("file") MultipartFile image) throws IOException {
-        postsService.updateImage(postId, image);
+        if (image.isEmpty()) {
+            return ResponseEntity.badRequest().body("empty file");
+        }
+        Integer updatedRows = postsService.updateImage(postId, image);
+        if (updatedRows == null || updatedRows == 0)
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.ok().build();
     }
 
 
@@ -135,7 +143,10 @@ public class PostsController {
 
     @DeleteMapping("/{id}/comments/{commentId}")
     @ResponseStatus(HttpStatus.OK)
-    public void deleteComment(@PathVariable(name = "id") Long id) {
-        postsService.deleteComment(id);
+    public void deleteComment(@PathVariable(name = "commentId") Long commentId) {
+        int deleted = postsService.deleteComment(commentId);
+        if (deleted == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "comment not found");
+        }
     }
 }

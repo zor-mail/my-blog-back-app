@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.testconfig.TestsConfiguration;
 import ru.yandex.practica.repositories.PostsRepository;
@@ -35,32 +36,56 @@ public class PostsServiceTests {
         }
 
       @Test
-        void testAddPost_success() throws IllegalArgumentException {
-            String[] tagsArray = new String[]{"#test", "#moduletest"};
-            PostDTO validPost = new PostDTO(null, "Test Order", "Check ok status", tagsArray, 0, 0);
-            PostDTO validSaved = new PostDTO(1L, "Test Order", "Check ok status", tagsArray, 0, 0);
+      void testAddPost_success() throws IllegalArgumentException {
+        String[] tagsArray = new String[]{"#test", "#moduletest"};
+        PostDTO validPost = new PostDTO(null, "Test Order", "Check ok status", tagsArray, 0, 0);
+        PostDTO validSaved = new PostDTO(1L, "Test Order", "Check ok status", tagsArray, 0, 0);
 
-            when(postsRepository.addPost(validPost)).thenReturn(validSaved);
-            PostDTO result = postsService.addPost(validPost);
+        when(postsRepository.addPost(validPost)).thenReturn(validSaved);
+        PostDTO result = postsService.addPost(validPost);
 
-            assertNotNull(result);
-            assertEquals(result.getText(), validPost.getText());
-            assertEquals(result.getTitle(), validPost.getTitle());
+        assertNotNull(result);
+        assertEquals(result.getText(), validPost.getText());
+        assertEquals(result.getTitle(), validPost.getTitle());
 
-          verify(postsRepository, times(1)).addPost(validPost);
-        }
+        verify(postsRepository, times(1)).addPost(validPost);
+     }
 
-          @Test
-        void testAddPost_validationFailure() {
-            PostDTO invalidPost = new PostDTO(2L, null, "Check ok status", null, -1, 0);
+      @Test
+      void testAddPost_validationFailure() {
+        PostDTO invalidPost = new PostDTO(2L, null, "Check ok status", null, -1, 0);
 
-            // Проверка выброса исключения
-            assertThrows(IllegalArgumentException.class, () -> postsService.addPost(invalidPost));
+        // Проверка выброса исключения
+        assertThrows(IllegalArgumentException.class, () -> postsService.addPost(invalidPost));
 
-            // Метод не был вызван
-            verify(postsRepository, never()).addPost(invalidPost);
-        }
+        // Метод не был вызван
+        verify(postsRepository, never()).addPost(invalidPost);
+     }
 
+    @Test
+    void testAddComment_success() throws IllegalArgumentException {
 
+        Comment validComment = new Comment(null, 4L, "Test Order");
+        Comment validSaved = new Comment(1L, 4L, "Test Order");
+
+        when(postsRepository.addComment(validComment)).thenReturn(validSaved);
+        Comment result = postsService.addComment(validComment);
+
+        assertNotNull(result);
+        assertEquals(result.getText(), validComment.getText());
+
+        verify(postsRepository, times(1)).addComment(validComment);
+    }
+
+    @Test
+    void testAddComment_validationFailure() {
+        Comment invalidComment = new Comment(2L, 44L, null);
+
+        // Проверка выброса исключения
+        assertThrows(IllegalArgumentException.class, () -> postsService.addComment(invalidComment));
+
+        // Метод не был вызван
+        verify(postsRepository, never()).addComment(invalidComment);
+    }
 
     }
