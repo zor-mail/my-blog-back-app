@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ru.yandex.practica</groupId>
-  <artifactId>my-blog-back-up</artifactId>
+  <artifactId>api</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <name>my-blog-back-up</name>
@@ -19,13 +19,13 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>5.11.0</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.junit</groupId>
+            <artifactId>junit-bom</artifactId>
+            <version>5.10.2</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -48,51 +48,123 @@
       <scope>test</scope>
     </dependency>
 
-      <!-- Spring Web MVC -->
-  <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-webmvc</artifactId>
-      <version>7.0.1</version>
-  </dependency>
-
-  <!-- Servlet API -->
-  <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
-      <scope>provided</scope>
-  </dependency>
-
-  <!-- Spring Data JDBC-->
-  <dependency>
-      <groupId>org.springframework.data</groupId>
-      <artifactId>spring-data-jdbc</artifactId>
-      <version>3.4.1</version>
-  </dependency>
-
-  <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <version>7.0.1</version>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.10.0</version> <!-- or any current 5.x+ -->
       <scope>test</scope>
-  </dependency>
+    </dependency>
 
-  <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>2.2.224</version> <!-- Используйте актуальную версию -->
-      <scope>runtime</scope> <!-- Или <scope>test</scope> если только для тестов -->
-  </dependency>
+      <dependency>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest</artifactId>
+          <version>2.2</version>
+          <scope>test</scope>
+      </dependency>
 
-  <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.34</version>
-      <scope>provided</scope>
-  </dependency>
+      <dependency>
+          <groupId>com.jayway.jsonpath</groupId>
+          <artifactId>json-path</artifactId>
+          <version>2.9.0</version> <!-- или версия, рекомендованная твоим spring-boot -->
+          <scope>test</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-web</artifactId>
+          <version>6.1.12</version> <!-- или твоя версия Spring 6/7 -->
+      </dependency>
+
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-webmvc</artifactId>
+          <version>6.1.12</version>
+      </dependency>
+
+      <!-- Servlet API -->
+      <dependency>
+          <groupId>jakarta.servlet</groupId>
+          <artifactId>jakarta.servlet-api</artifactId>
+          <version>6.1.0</version>
+          <scope>provided</scope>
+      </dependency>
+
+      <!-- Spring Data JDBC-->
+      <dependency>
+          <groupId>org.springframework.data</groupId>
+          <artifactId>spring-data-jdbc</artifactId>
+          <version>3.4.1</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-test</artifactId>
+          <version>6.1.12</version>
+          <scope>test</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <version>42.7.3</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.h2database</groupId>
+          <artifactId>h2</artifactId>
+          <version>2.2.224</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.17.0</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.projectlombok</groupId>
+          <artifactId>lombok</artifactId>
+          <version>1.18.34</version>
+          <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.assertj</groupId>
+          <artifactId>assertj-core</artifactId>
+          <version>3.27.3</version> <!-- или актуальную -->
+          <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>
+    <finalName>api</finalName>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.tomcat.maven</groupId>
+            <artifactId>tomcat7-maven-plugin</artifactId>
+            <version>2.2</version>
+            <configuration>
+                <url>http://localhost:8080/manager/text</url>
+                <server>TomcatServer</server>
+                <username>robot</username>
+                <password>robot</password>
+                <path>/api</path>
+                <update>true</update>
+            </configuration>
+
+            <executions>
+                <execution>
+                    <id>tomcat-auto-deploy</id>
+                    <phase>install</phase>        <!-- к какой фазе привязать -->
+                    <goals>
+                        <goal>redeploy-only</goal> <!-- или deploy / redeploy -->
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+
+
     <pluginManagement>
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
