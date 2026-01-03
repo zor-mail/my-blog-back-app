@@ -21,10 +21,8 @@ import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.testconfig.TestDataSourceConfiguration;
 import ru.yandex.practica.testconfig.TestWebConfiguration;
-import ru.yandex.practica.testconfig.TestsConfiguration;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
