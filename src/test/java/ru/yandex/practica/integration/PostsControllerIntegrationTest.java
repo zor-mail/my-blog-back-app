@@ -26,26 +26,21 @@ import ru.yandex.practica.testconfig.TestsConfiguration;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.hamcrest.Matchers.hasSize;
 
-/*@SpringJUnitConfig(classes = {
+@SpringJUnitConfig(classes = {
         TestDataSourceConfiguration.class,
         TestWebConfiguration.class
-})*/
-@SpringJUnitConfig(classes = {
+})
+/*@SpringJUnitConfig(classes = {
         DataSourceConfiguration.class,
         WebConfiguration.class
-})
+})*/
 @WebAppConfiguration
-@TestPropertySource(locations = "classpath:application.properties")
-//@TestPropertySource(locations = "classpath:test-application.properties")
+//@TestPropertySource(locations = "classpath:application.properties")
+@TestPropertySource(locations = "classpath:test-application.properties")
 
 class PostsControllerIntegrationTest {
 
@@ -61,7 +56,7 @@ class PostsControllerIntegrationTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
         // Чистим и наполняем БД перед каждым тестом
-        jdbcTemplate.execute("DELETE FROM myblog.posts");
+        jdbcTemplate.execute("DELETE FROM myblog.posts WHERE id = 4 OR id = 5");
         jdbcTemplate.execute("""
                     INSERT INTO myblog.posts (id, title, text, tags, likes_count)
                     VALUES (4,'Зимний вид на гору Фудзи','Прекрасный вид открывается с этой небольшой возвышенности на гору Фудзи', 
@@ -72,7 +67,6 @@ class PostsControllerIntegrationTest {
                     VALUES (5,'Зимний дворец','Белые ночи и выставка *100 видов на гору Фудзи*', 
                             'Питер, белыеночи', 0)
                 """);
-
 
         jdbcTemplate.execute("""
                     INSERT INTO myblog.comments (id, post_id, text)
@@ -93,25 +87,29 @@ class PostsControllerIntegrationTest {
     void getPosts_returnsJsonArray() throws Exception {
 
         var result = mockMvc.perform(get("/posts")
-                .contentType(MediaType.APPLICATION_JSON)
-                .characterEncoding("UTF-8")
-                .param("search", "фудзи")
-                //.param("search", "зимний")
-                .param("pageNumber", "1")
-                .param("pageSize", "5")
-                .accept(MediaType.APPLICATION_JSON))
-                // .andDo(print())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .characterEncoding("UTF-8")
+                    .param("search", "фудзи")
+                    .param("pageNumber", "1")
+                    .param("pageSize", "5")
+                    .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts[0].title").value("Зимний вид на гору Фудзи"))
-                //.andExpect(jsonPath("$.posts[1].title").value("Зимний дворец"))
                 .andExpect(jsonPath("$.posts[0].tags[0]").value("фудзи"));
+    }
 
+    @Test
+    void getPosts_returnsEmptyArray() throws Exception {
 
-
-        System.out.println("###########  Posts ############");
-        String body = result.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
-
+        mockMvc.perform(get("/posts")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .characterEncoding("UTF-8")
+                    .param("search", "lsksd;als")
+                    .param("pageNumber", "1")
+                    .param("pageSize", "5")
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.posts", hasSize(0)));
     }
 
     @Test
@@ -123,7 +121,6 @@ class PostsControllerIntegrationTest {
                       "tags": ["#былое", "#думы"]
                     }
                 """;
-
         MvcResult result = mockMvc.perform(post("/posts")
                         .characterEncoding("UTF-8")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -136,23 +133,15 @@ class PostsControllerIntegrationTest {
                 .andReturn();
 
         String responseJson = result.getResponse().getContentAsString();
-
         ObjectMapper mapper = new ObjectMapper();
         PostDTO postObject = mapper.readValue(responseJson, PostDTO.class);
         Assertions.assertNotNull(postObject);
-
         Long newPostId = postObject.getId();
 
-
-        var result2 = mockMvc.perform(get("/posts/{id}", newPostId)
-                        .characterEncoding("UTF-8"))
+        mockMvc.perform(get("/posts/{id}", newPostId)
+                .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Мой пост №1"));
-
-        System.out.println("###########  Create Post ############");
-        System.out.println(result2.andReturn().getResponse().getContentAsString());
-        String body = result2.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
 
     @Test
@@ -160,7 +149,7 @@ class PostsControllerIntegrationTest {
         mockMvc.perform(delete("/posts/{id}", 4))
                 .andExpect(status().isOk());
 
-        var result = mockMvc.perform(get("/posts")
+        mockMvc.perform(get("/posts")
                         .characterEncoding("UTF-8")
                         .param("search", "зимний")
                         .param("pageNumber", "1")
@@ -168,9 +157,6 @@ class PostsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts", hasSize(1)))
                 .andReturn();
-        System.out.println("###########  Delete Post ############");
-        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
 
     @Test
@@ -186,17 +172,13 @@ class PostsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.posts", hasSize(2)))
                 .andReturn();
-        System.out.println("###########  Delete Post ############");
-        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
-
 
     @Test
     void uploadAndDownloadImage_success() throws Exception {
         File image = new File("./src/test/resources/Files/nature.jpg");
         MockMultipartFile multipartFile = new MockMultipartFile(
-                "file",
+                "image",
                 "nature.jpg",
                 MediaType.IMAGE_PNG_VALUE,
                 Files.readAllBytes(image.toPath())
@@ -218,7 +200,7 @@ class PostsControllerIntegrationTest {
 
     @Test
     void uploadImage_emptyFile_badRequest() throws Exception {
-        MockMultipartFile empty = new MockMultipartFile("file", "empty.jpg", "image/jpeg", new byte[0]);
+        MockMultipartFile empty = new MockMultipartFile("image", "empty.jpg", "image/jpeg", new byte[0]);
 
         mockMvc.perform(multipart("/posts/{id}/image", 1L).
                         file(empty)
@@ -228,10 +210,9 @@ class PostsControllerIntegrationTest {
                 .andExpect(content().string("empty file"));
     }
 
-
     @Test
     void uploadImage_imageNotFound_404() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "testFile.jpg", "image/jpeg", new byte[]{1, 2, 3});
+        MockMultipartFile file = new MockMultipartFile("image", "testFile.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
         mockMvc.perform(multipart("/posts/{id}/image", 44L)
                 .file(file)
@@ -240,45 +221,35 @@ class PostsControllerIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void addLike_returnsLikeCountPlusOne() throws Exception {
 
-
-
-
-
-
+        mockMvc.perform(post("/posts/{id}/likes", 4L)
+                        .characterEncoding("UTF-8"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+    }
 
     @Test
     void getComment_returnsJson() throws Exception {
 
-        var result = mockMvc.perform(get("/posts/{id}/comments/{commentId}", 4L, 401L)
+        mockMvc.perform(get("/posts/{id}/comments/{commentId}", 4L, 401L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .characterEncoding("UTF-8")
                         .accept(MediaType.APPLICATION_JSON))
-                // .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.text").value("Круто, Улитка, ползи!"));
-
-        System.out.println("###########  Comments ############");
-        String body = result.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
-
     }
 
     @Test
     void getComments_returnsJsonArray() throws Exception {
 
-        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+        mockMvc.perform(get("/posts/{id}/comments", 4L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .characterEncoding("UTF-8")
                         .accept(MediaType.APPLICATION_JSON))
-                // .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].text").value("Крута гора Фудзи..."));
-
-        System.out.println("###########  Comments ############");
-        String body = result.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
-
     }
 
     @Test
@@ -289,7 +260,6 @@ class PostsControllerIntegrationTest {
                         "postId": 4
                       }
                 """;
-
         MvcResult result = mockMvc.perform(post("/posts/{id}/comments", 5)
                         .characterEncoding("UTF-8")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -309,14 +279,10 @@ class PostsControllerIntegrationTest {
         Long newCommentId = commentObject.getId();
 
 
-        var result2 = mockMvc.perform(get("/posts/{id}/comments/{commentId}", 5, newCommentId)
-                        .characterEncoding("UTF-8"))
+        mockMvc.perform(get("/posts/{id}/comments/{commentId}", 5, newCommentId)
+                .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.text").value("Белые ночи"));
-
-        System.out.println("###########  Create Comment ############");
-        String body = result2.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
 
     @Test
@@ -324,14 +290,11 @@ class PostsControllerIntegrationTest {
         mockMvc.perform(delete("/posts/{id}/comments/{commentId}", 4L, 400))
                 .andExpect(status().isOk());
 
-        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+        mockMvc.perform(get("/posts/{id}/comments", 4L)
                         .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andReturn();
-        System.out.println("###########  Delete Comment ############");
-        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
 
     @Test
@@ -339,14 +302,10 @@ class PostsControllerIntegrationTest {
         mockMvc.perform(delete("/posts/{id}/comments/{commentId}", 4L, 405))
                 .andExpect(status().isNotFound());
 
-        var result = mockMvc.perform(get("/posts/{id}/comments", 4L)
+        mockMvc.perform(get("/posts/{id}/comments", 4L)
                         .characterEncoding("UTF-8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andReturn();
-        System.out.println("###########  Delete Comment ############");
-        String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
-        System.out.println(body);
     }
-    
 }

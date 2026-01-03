@@ -5,7 +5,6 @@ import org.springframework.context.annotation.*;
 import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
 
-// @Configuration
 public class TestsConfiguration {
 
     @Bean

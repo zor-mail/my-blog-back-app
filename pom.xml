@@ -138,6 +138,33 @@
 
   <build>
     <finalName>api</finalName>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.tomcat.maven</groupId>
+            <artifactId>tomcat7-maven-plugin</artifactId>
+            <version>2.2</version>
+            <configuration>
+                <url>http://localhost:8080/manager/text</url>
+                <server>TomcatServer</server>
+                <username>robot</username>
+                <password>robot</password>
+                <path>/api</path>
+                <update>true</update>
+            </configuration>
+
+            <executions>
+                <execution>
+                    <id>tomcat-auto-deploy</id>
+                    <phase>install</phase>        <!-- к какой фазе привязать -->
+                    <goals>
+                        <goal>redeploy-only</goal> <!-- или deploy / redeploy -->
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+
+
     <pluginManagement>
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->

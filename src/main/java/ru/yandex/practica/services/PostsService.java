@@ -8,6 +8,7 @@ import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.repositories.PostsRepository;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,22 +40,15 @@ import java.util.stream.Collectors;
             else
                 whereCondition = getTagsAndWordsSearchString(searchString, "title", "tags");
 
-            System.out.println("######## Where = " + whereCondition);
-
             Long recordsCount = postsRepository.getRecordsCount(whereCondition);
             int lastPage = (int)Math.ceil((double) recordsCount / pageSize);
             boolean hasPrev = pageNumber != 1;
             boolean hasNext = pageNumber < lastPage;
             long offset = (long) pageSize * (pageNumber - 1);
 
-            System.out.println("######## Params = " + whereCondition);
-
-            if (offset >= recordsCount)
-                return null;
-
-            System.out.println("######## Where = " + whereCondition);
+            if (recordsCount == 0 || offset >= recordsCount)
+                return new PostsDTO(new ArrayList<PostDTO>(), hasPrev, hasNext, lastPage);
             List<PostDTO> posts = postsRepository.getPosts(whereCondition, pageSize, offset);
-            System.out.println("######## posts = " + posts.isEmpty() + " " + (posts.isEmpty() ? posts.size() : 0));
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
 
@@ -68,6 +62,7 @@ import java.util.stream.Collectors;
         String splittedTags = Arrays.stream(searchString.split("\\s+")).
                 filter(substr -> substr.startsWith("#") && substr.length() > 1).
                 map(substr -> substr.substring(1)).
+                filter(substr -> !substr.matches("#+")).
                 collect(Collectors.joining(andWherePart + tagsWhereCondition));
 
         if (splittedTags.isEmpty())

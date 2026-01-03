@@ -23,13 +23,11 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     // Posts
     //==============================================
-
     @Override
     public Long getRecordsCount(String searchCondition) {
         return jdbcTemplate.queryForObject(
                 "select count(*) as counter from myblog.posts" + searchCondition, Long.class);
     }
-
 
     @Override
     public PostDTO getPost(Long postId) {
@@ -66,7 +64,6 @@ public class JdbcNativePostsRepository implements PostsRepository {
                 }, postId);
     }
 
-
     @Override
     public List<PostDTO> getPosts(
             String whereCondition,
@@ -77,7 +74,12 @@ public class JdbcNativePostsRepository implements PostsRepository {
                 "SELECT " +
                         " ps.id, " +
                         " ps.title," +
-                        " left(ps.text, 128) || '...' as text," +
+                        " CASE WHEN" +
+                        " LENGTH(ps.text) > 128" +
+                        " THEN" +
+                        " left(ps.text, 128) || '...'" +
+                        " ELSE" +
+                        " ps.text END as text, " +
                         " ps.tags," +
                         " ps.likes_count," +
                         " COALESCE(comm.comments_count, 0) AS comments_count" +
@@ -141,7 +143,7 @@ public class JdbcNativePostsRepository implements PostsRepository {
             ps.setLong(4, post.getId());
             return ps;
         });
-        return post;
+        return getPost(post.getId());
     }
 
     @Override
@@ -155,12 +157,12 @@ public class JdbcNativePostsRepository implements PostsRepository {
     @Transactional
     public Integer addLike(Long postId) {
         jdbcTemplate.update(
-                "update myblog.posts set likes_count = likes_count + 1 where post_id = ?",
+                "update myblog.posts set likes_count = likes_count + 1 where id = ?",
                 postId
         );
 
         return jdbcTemplate.queryForObject(
-                "select likes_count from myblog.posts where post_id = ?",
+                "select likes_count from myblog.posts where id = ?",
                 Integer.class,
                 postId
         );
@@ -205,7 +207,6 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     // Comments
     //==============================================
-
     @Override
     public Comment getComment(Long commentId) {
         return jdbcTemplate.queryForObject(

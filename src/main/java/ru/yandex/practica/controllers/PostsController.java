@@ -63,8 +63,6 @@ public class PostsController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found");
     }
 
-
-
     // Likes
     //==============================================
     @PostMapping("/{id}/likes")
@@ -81,7 +79,7 @@ public class PostsController {
             @PathVariable("id") Long postId) {
         byte[] image = postsService.getImage(postId);
         if (image == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ofNullable(null);
         }
 
         return ResponseEntity
@@ -92,10 +90,9 @@ public class PostsController {
     }
 
     @PutMapping(path="/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> updateImage(
-            @PathVariable(name = "id") Long postId,
-            @RequestParam("file") MultipartFile image) throws IOException {
+            @PathVariable("id") Long postId,
+            @RequestParam("image") MultipartFile image) throws IOException {
         if (image.isEmpty()) {
             return ResponseEntity.badRequest().body("empty file");
         }
@@ -108,7 +105,6 @@ public class PostsController {
 
     // Comments
     //==============================================
-
     @GetMapping(path="/{id}/comments/{commentId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public Comment getComment(
