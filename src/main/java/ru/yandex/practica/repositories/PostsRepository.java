@@ -4,13 +4,14 @@ import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PostsRepository {
 
-    Long getRecordsCount(String whereCondition);
+    Long getRecordsCount(Map<String, List<String>> sqlWithParams);
     PostDTO getPost(Long postId);
     List<PostDTO> getPosts(
-            String search,
+            Map<String, List<String>> sqlWithParams,
             Integer pageSize,
             Long offset);
     PostDTO addPost(PostDTO post);

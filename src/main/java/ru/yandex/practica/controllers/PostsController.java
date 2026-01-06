@@ -46,7 +46,11 @@ public class PostsController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public PostDTO addPost(@RequestBody PostDTO post) throws IllegalArgumentException {
-        return postsService.addPost(post);
+        try {
+            return postsService.addPost(post);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "bad request: " + ex.getMessage());
+        }
     }
 
     @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

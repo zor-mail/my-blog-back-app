@@ -14,8 +14,9 @@ import ru.yandex.practica.testconfig.TestsConfiguration;
 import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -93,19 +94,43 @@ public class PostsServiceTests {
     @MethodSource("provideStrings")
     void testGetTagsAndWords_splitAndUniteSuccess(String searchString, String expectedWhereString) {
 
-        String tagsAndWords =  postsService.getTagsAndWordsSearchString(searchString, "title", "tags");
-        assertEquals(expectedWhereString, tagsAndWords);
+        String postSearchSQL =
+                "SELECT " +
+                        " ps.id, " +
+                        " ps.title," +
+                        " CASE WHEN" +
+                        " LENGTH(ps.text) > 128" +
+                        " THEN" +
+                        " left(ps.text, 128) || '...'" +
+                        " ELSE" +
+                        " ps.text END as text, " +
+                        " ps.tags," +
+                        " ps.likes_count," +
+                        " COALESCE(comm.comments_count, 0) AS comments_count" +
+                        " FROM myblog.posts ps" +
+                        " LEFT JOIN (" +
+                        "    SELECT post_id, COUNT(*) AS comments_count" +
+                        "    FROM myblog.comments" +
+                        "    GROUP BY post_id" +
+                        ") comm" +
+                        " ON ps.id = comm.post_id";
+
+        Map<String, List<String>> tagsAndWords =  postsService.getTagsAndWordsSearchQueryString(postSearchSQL, searchString,
+                "title", "tags", true);
+
+        String sqlTemplate = Objects.requireNonNull(tagsAndWords.entrySet()
+                .stream()
+                .findFirst().orElse(null)).getKey();
+        assertEquals(expectedWhereString, sqlTemplate);
     }
 
     static Stream<Object[]> provideStrings() {
         return Stream.of(
         new Object[]{"река Хопер #река #хопер  природа Волгоградской области #природа ## #",
-                " WHERE lower(title) like '%река хопер%' AND lower(title) like '%природа волгоградской области%' " +
-                "AND lower(tags) like '%река%' AND lower(tags) like '%хопер%' " +
-                "AND lower(tags) like '%природа%'"},
-        new Object[]{"", ""},
+                "SELECT  ps.id,  ps.title, CASE WHEN LENGTH(ps.text) > 128 THEN left(ps.text, 128) || '...' ELSE ps.text END as text,  ps.tags, ps.likes_count, COALESCE(comm.comments_count, 0) AS comments_count FROM myblog.posts ps LEFT JOIN (    SELECT post_id, COUNT(*) AS comments_count    FROM myblog.comments    GROUP BY post_id) comm ON ps.id = comm.post_id WHERE lower(tags) like ? AND lower(tags) like ? AND lower(tags) like ? AND lower(title) like ? AND lower(title) like ? LIMIT ? OFFSET ?"},
+        new Object[]{"", "SELECT  ps.id,  ps.title, CASE WHEN LENGTH(ps.text) > 128 THEN left(ps.text, 128) || '...' ELSE ps.text END as text,  ps.tags, ps.likes_count, COALESCE(comm.comments_count, 0) AS comments_count FROM myblog.posts ps LEFT JOIN (    SELECT post_id, COUNT(*) AS comments_count    FROM myblog.comments    GROUP BY post_id) comm ON ps.id = comm.post_id LIMIT ? OFFSET ?"},
         new Object[]{"#природа # природа",
-                " WHERE lower(title) like '%природа%' AND lower(tags) like '%природа%'"}
+                "SELECT  ps.id,  ps.title, CASE WHEN LENGTH(ps.text) > 128 THEN left(ps.text, 128) || '...' ELSE ps.text END as text,  ps.tags, ps.likes_count, COALESCE(comm.comments_count, 0) AS comments_count FROM myblog.posts ps LEFT JOIN (    SELECT post_id, COUNT(*) AS comments_count    FROM myblog.comments    GROUP BY post_id) comm ON ps.id = comm.post_id WHERE lower(tags) like ? AND lower(title) like ? LIMIT ? OFFSET ?"}
         );
     }
 

@@ -8,10 +8,9 @@ import ru.yandex.practica.models.PostsDTO;
 import ru.yandex.practica.repositories.PostsRepository;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service
@@ -34,13 +33,39 @@ import java.util.stream.Collectors;
                 Integer pageNumber,
                 Integer pageSize
         ) {
-            String whereCondition;
-            if (searchString == null || searchString.isEmpty())
-                whereCondition = "";
-            else
-                whereCondition = getTagsAndWordsSearchString(searchString, "title", "tags");
+            String postSearchSQL =
+                    "SELECT " +
+                            " ps.id, " +
+                            " ps.title," +
+                            " CASE WHEN" +
+                            " LENGTH(ps.text) > 128" +
+                            " THEN" +
+                            " left(ps.text, 128) || '...'" +
+                            " ELSE" +
+                            " ps.text END as text, " +
+                            " ps.tags," +
+                            " ps.likes_count," +
+                            " COALESCE(comm.comments_count, 0) AS comments_count" +
+                            " FROM myblog.posts ps" +
+                            " LEFT JOIN (" +
+                            "    SELECT post_id, COUNT(*) AS comments_count" +
+                            "    FROM myblog.comments" +
+                            "    GROUP BY post_id" +
+                            ") comm" +
+                            " ON ps.id = comm.post_id";
 
-            Long recordsCount = postsRepository.getRecordsCount(whereCondition);
+            String postSearchCountSQL =
+                    "SELECT count(*) as counter FROM myblog.posts";
+
+            Map<String, List<String>> sqlWithParams = getTagsAndWordsSearchQueryString(postSearchCountSQL, searchString,
+                    "title", "tags", false);
+
+            Long recordsCount = postsRepository.getRecordsCount(sqlWithParams);
+
+
+            sqlWithParams = getTagsAndWordsSearchQueryString(postSearchSQL, searchString,
+                    "title", "tags", true);
+
             int lastPage = (int)Math.ceil((double) recordsCount / pageSize);
             boolean hasPrev = pageNumber != 1;
             boolean hasNext = pageNumber < lastPage;
@@ -48,26 +73,40 @@ import java.util.stream.Collectors;
 
             if (recordsCount == 0 || offset >= recordsCount)
                 return new PostsDTO(new ArrayList<PostDTO>(), hasPrev, hasNext, lastPage);
-            List<PostDTO> posts = postsRepository.getPosts(whereCondition, pageSize, offset);
+
+            List<PostDTO> posts = postsRepository.getPosts(sqlWithParams, pageSize, offset);
             return new PostsDTO(posts, hasPrev, hasNext, lastPage);
         }
 
-    public static String getTagsAndWordsSearchString(String searchString, String titleColumnName, String tagsColumnName) {
-        StringBuilder resultSearchBuilder = new StringBuilder();
-        String andWherePart = "%' AND ";
-        String titleWhereCondition = String.format("lower(%s) like '%%", titleColumnName);
-        String tagsWhereCondition = String.format("lower(%s) like '%%", tagsColumnName);
-        String splittedUnitedWords;
+    public Map<String, List<String>> getTagsAndWordsSearchQueryString(String querySQL, String searchString,
+                                         String titleColumnName, String tagsColumnName, boolean withLimitAndOffset) {
 
-        String splittedTags = Arrays.stream(searchString.split("\\s+")).
+        Map<String, List<String>> sqlWithParamsMap = new HashMap<>();
+        List<String> queryParams = new ArrayList<>();
+        StringBuilder whereConditionBuilder = new StringBuilder();
+        String limitOffset = " LIMIT ? OFFSET ?";
+
+        if (searchString == null || searchString.trim().isEmpty()) {
+            if (withLimitAndOffset)
+                querySQL += limitOffset;
+            sqlWithParamsMap.put(querySQL, queryParams);
+            return sqlWithParamsMap;
+        }
+        String titleWhereCondition = String.format("lower(%s) like ?", titleColumnName);
+        String tagsWhereCondition = String.format("lower(%s) like ?", tagsColumnName);
+        List<String> splittedUnitedWords = new ArrayList<>();
+
+        List<String> splittedTags = Arrays.stream(searchString.split("\\s+")).
                 filter(substr -> substr.startsWith("#") && substr.length() > 1).
                 map(substr -> substr.substring(1)).
                 filter(substr -> !substr.matches("#+")).
-                collect(Collectors.joining(andWherePart + tagsWhereCondition));
-
+                map(substr -> "%" + substr + "%").
+                toList();
         if (splittedTags.isEmpty())
-            splittedUnitedWords = searchString;
+            splittedUnitedWords.add(searchString);
         else {
+            whereConditionBuilder.append(splittedTags.stream().map(tag -> tagsWhereCondition).
+                    collect(Collectors.joining(" AND ")));
             // убирается первое слово в каждом подмассиве, начинающееся с # (как тэг)
             splittedUnitedWords = Arrays.stream(("for_del " + searchString).split("#")).map(substr -> {
                         String[] substrArr = substr.split("\\s+");// для пробелов, табов и т.п.
@@ -76,21 +115,27 @@ import java.util.stream.Collectors;
                         return String.join(" ", Arrays.copyOfRange(substrArr, 1, substrArr.length));
                     }).filter(substr -> substr != null && !substr.trim().isEmpty()).
                     map(String::toLowerCase).
-                    collect(Collectors.joining(andWherePart + titleWhereCondition));
+                    collect(Collectors.toList());
+            if (!splittedUnitedWords.isEmpty())
+                whereConditionBuilder.append(" AND ");
         }
-
         if (!splittedUnitedWords.isEmpty()) {
-            resultSearchBuilder.append(titleWhereCondition);
-            resultSearchBuilder.append(splittedUnitedWords);
-            resultSearchBuilder.append("%'");
+            splittedUnitedWords = splittedUnitedWords.stream().map(substr -> "%" + substr + "%").collect(Collectors.toList());
+            whereConditionBuilder.append(splittedUnitedWords.stream().map(substr -> titleWhereCondition).
+                    collect(Collectors.joining(" AND ")));
         }
-        if (!splittedTags.isEmpty()) {
-            resultSearchBuilder.append(" AND ");
-            resultSearchBuilder.append(tagsWhereCondition);
-            resultSearchBuilder.append(splittedTags);
-            resultSearchBuilder.append("%'");
+        queryParams = Stream.of(splittedTags, splittedUnitedWords)
+                .flatMap(List::stream).collect(Collectors.toList());                ;
+
+        if (!splittedUnitedWords.isEmpty() || !splittedTags.isEmpty()) {
+            whereConditionBuilder.insert(0, " WHERE ");
+            querySQL += whereConditionBuilder;
         }
-        return resultSearchBuilder.isEmpty() ? "" : " WHERE " + resultSearchBuilder;
+        if (withLimitAndOffset)
+            querySQL += limitOffset;
+
+        sqlWithParamsMap.put(querySQL, queryParams);
+        return sqlWithParamsMap;
     }
 
 

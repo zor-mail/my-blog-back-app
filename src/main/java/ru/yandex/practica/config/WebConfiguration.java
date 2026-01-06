@@ -36,13 +36,4 @@ public class WebConfiguration implements WebMvcConfigurer {
         converters.add(json);
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOriginPatterns("http://localhost") // вместо allowedOrigins(...)
-                .allowedMethods("*")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
-
 }

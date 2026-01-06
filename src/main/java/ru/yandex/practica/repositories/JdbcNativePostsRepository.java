@@ -1,6 +1,7 @@
 package ru.yandex.practica.repositories;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -24,9 +25,21 @@ public class JdbcNativePostsRepository implements PostsRepository {
     // Posts
     //==============================================
     @Override
-    public Long getRecordsCount(String searchCondition) {
+    public Long getRecordsCount(Map<String, List<String>> sqlWithParams) {
+
+        String sqlTemplate = Objects.requireNonNull(sqlWithParams.entrySet()
+                .stream()
+                .findFirst().orElse(null)).getKey();
+
+        List<String> whereConditionParams = Objects.requireNonNull(sqlWithParams.entrySet()
+                .stream()
+                .findFirst().orElse(null)).getValue();
+
         return jdbcTemplate.queryForObject(
-                "select count(*) as counter from myblog.posts" + searchCondition, Long.class);
+                sqlTemplate,
+                Long.class,
+                whereConditionParams.toArray()
+        );
     }
 
     @Override
@@ -66,52 +79,51 @@ public class JdbcNativePostsRepository implements PostsRepository {
 
     @Override
     public List<PostDTO> getPosts(
-            String whereCondition,
+            Map<String, List<String>> sqlWithParams,
             Integer pageSize,
             Long offset
     ) {
-        String selectString = String.format(
-                "SELECT " +
-                        " ps.id, " +
-                        " ps.title," +
-                        " CASE WHEN" +
-                        " LENGTH(ps.text) > 128" +
-                        " THEN" +
-                        " left(ps.text, 128) || '...'" +
-                        " ELSE" +
-                        " ps.text END as text, " +
-                        " ps.tags," +
-                        " ps.likes_count," +
-                        " COALESCE(comm.comments_count, 0) AS comments_count" +
-                        " FROM myblog.posts ps" +
-                        " LEFT JOIN (" +
-                        "    SELECT post_id, COUNT(*) AS comments_count" +
-                        "    FROM myblog.comments" +
-                        "    GROUP BY post_id" +
-                        ") comm" +
-                        " ON ps.id = comm.post_id" +
-                " %s LIMIT ? OFFSET ?", whereCondition);
+        String sqlTemplate = Objects.requireNonNull(sqlWithParams.entrySet()
+                .stream()
+                .findFirst().orElse(null)).getKey();
 
-        return jdbcTemplate.query(selectString,
-                (rs, rowNum) -> {
-                    String tagsStr = rs.getString("tags"); // "#Питер,#белыеночи"
-                    String[] tagsArray = tagsStr == null || tagsStr.isBlank()
-                            ? new String[0]
-                            : tagsStr.split(",");
-                    tagsArray = Arrays.stream(tagsArray)
-                            .map(String::trim)
-                            .toArray(String[]::new);
-                        return new PostDTO(
-                                rs.getLong("id"),
-                                rs.getString("title"),
-                                rs.getString("text"),
-                                tagsArray,
-                                rs.getInt("likes_count"),
-                                rs.getInt("comments_count")
-                        );
-                }, pageSize, offset
-        );
+        List<String> whereConditionParams = Objects.requireNonNull(sqlWithParams.entrySet()
+                .stream()
+                .findFirst().orElse(null)).getValue();
+
+        return jdbcTemplate.query(con -> {
+                    var ps = con.prepareStatement(sqlTemplate, new String[]{"id"});
+                    for (int i = 0; i < whereConditionParams.size(); i++)
+                        ps.setString(i + 1, whereConditionParams.get(i));
+                    ps.setInt(whereConditionParams.size() + 1, pageSize);
+                    ps.setLong(whereConditionParams.size() + 2, offset);
+                    return ps;
+                }, getPostDTORowMapper()
+                );
     }
+
+    RowMapper<PostDTO> getPostDTORowMapper() {
+        return (rs, rowNum) -> {
+            String tagsStr = rs.getString("tags"); // "#Питер,#белыеночи"
+            String[] tagsArray = tagsStr == null || tagsStr.isBlank()
+                    ? new String[0]
+                    : tagsStr.split(",");
+            tagsArray = Arrays.stream(tagsArray)
+                    .map(String::trim)
+                    .toArray(String[]::new);
+            return new PostDTO(
+                    rs.getLong("id"),
+                    rs.getString("title"),
+                    rs.getString("text"),
+                    tagsArray,
+                    rs.getInt("likes_count"),
+                    rs.getInt("comments_count")
+            );
+        };
+    }
+
+
+
 
     @Override
     public PostDTO addPost(PostDTO post) {
