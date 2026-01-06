@@ -29,8 +29,9 @@ ________________________________________________
    - spring.datasource.username
    - spring.datasource.password
    - spring.datasource.driver-class-name
-     (Переименуйте файл application.properties.example в application.properties и добавьте 
-     соответствующие глобальные переменные или конкретные данные)
+   <br>
+   (Переименуйте файл application.properties.example в application.properties и добавьте 
+   соответствующие глобальные переменные или конкретные данные)
 
 2. Структура тестовой БД H2 находится в файле /src/test/resources/test-schema.sql,
    настройки доступа к БД в файле /src/test/resources/test-application.properties в параметрах:
