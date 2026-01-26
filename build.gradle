@@ -38,14 +38,43 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+}
+
+tasks.withType(JavaExec).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+}
+
+// Для Spring Boot задач
+tasks.named('bootRun').configure {
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+    systemProperty 'server.servlet.encoding.charset', 'UTF-8'
+    systemProperty 'server.servlet.encoding.enabled', 'true'
+    systemProperty 'server.servlet.encoding.force', 'true'
+}
+
+tasks.named('test').configure {
     testLogging {
         events 'passed', 'skipped', 'failed'
         showStandardStreams = true
     }
 }
-
 // JAR будет самозапускающимся (fat/uber jar)
 jar {
     enabled = false  // отключаем обычный jar, используем bootJar
