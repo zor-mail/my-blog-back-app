@@ -15,8 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import ru.yandex.practica.config.DataSourceConfiguration;
-import ru.yandex.practica.config.WebConfiguration;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
 import ru.yandex.practica.testconfig.TestDataSourceConfiguration;
@@ -37,9 +35,6 @@ import static org.hamcrest.Matchers.hasSize;
         WebConfiguration.class
 })*/
 @WebAppConfiguration
-//@TestPropertySource(locations = "classpath:application.properties")
-@TestPropertySource(locations = "classpath:test-application.properties")
-
 class PostsControllerIntegrationTest {
 
     @Autowired

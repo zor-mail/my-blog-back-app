@@ -24,17 +24,17 @@ ________________________________________________
 ## Конфигурация
 
 1. Структура рабочей БД Postgresql 18 находится в файле /src/main/resources/schema.sql,
-    настройки доступа к БД в файле /src/main/resources/application.properties в параметрах:
+    настройки доступа к БД в файле /src/main/resources/application.yaml в параметрах:
    - spring.datasource.url
    - spring.datasource.username
    - spring.datasource.password
    - spring.datasource.driver-class-name
    <br>
-   (Переименуйте файл application.properties.example в application.properties и добавьте 
+   (Переименуйте файл application.example.yaml в application.yaml и добавьте 
    соответствующие глобальные переменные или конкретные данные)
 
-2. Структура тестовой БД H2 находится в файле /src/test/resources/test-schema.sql,
-   настройки доступа к БД в файле /src/test/resources/test-application.properties в параметрах:
+2. Структура тестовой БД H2 находится в файле /src/test/resources/schema.sql,
+   настройки доступа к БД в файле /src/test/resources/application.yaml в параметрах:
     - spring.datasource.url
     - spring.datasource.username
     - spring.datasource.password

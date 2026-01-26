@@ -14,7 +14,6 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import javax.sql.DataSource;
 
 @Configuration
-@PropertySource("classpath:application.properties")
 public class DataSourceConfiguration {
         @Bean
         public DataSource dataSource(

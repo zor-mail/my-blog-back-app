@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: my-blog-springboot
+    datasource:
+      url: jdbc:postgresql://localhost:5432/myblogdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
