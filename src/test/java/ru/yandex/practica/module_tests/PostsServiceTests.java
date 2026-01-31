@@ -2,20 +2,13 @@ package ru.yandex.practica.module_tests;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
-import ru.yandex.practica.testconfig.TestsConfiguration;
 import ru.yandex.practica.repositories.PostsRepository;
 import ru.yandex.practica.services.PostsService;
 
@@ -27,13 +20,13 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = {TestsConfiguration.class})
+@SpringBootTest
 public class PostsServiceTests {
 
-        @Autowired
-        private PostsRepository postsRepository;
+    @MockitoBean
+    private PostsRepository postsRepository;
 
-        @Autowired
+    @Autowired
         private PostsService postsService;
 
         @BeforeEach
