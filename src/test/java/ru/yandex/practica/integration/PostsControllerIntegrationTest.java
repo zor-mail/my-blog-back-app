@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -17,7 +19,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import ru.yandex.practica.models.Comment;
 import ru.yandex.practica.models.PostDTO;
-import ru.yandex.practica.testconfig.TestDataSourceConfiguration;
 import ru.yandex.practica.testconfig.TestWebConfiguration;
 
 import java.io.File;
@@ -26,27 +27,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.hasSize;
 
-@SpringJUnitConfig(classes = {
-        TestDataSourceConfiguration.class,
+@SpringBootTest(classes = {
         TestWebConfiguration.class
 })
-/*@SpringJUnitConfig(classes = {
-        DataSourceConfiguration.class,
-        WebConfiguration.class
-})*/
-@WebAppConfiguration
+@AutoConfigureMockMvc
 class PostsControllerIntegrationTest {
 
     @Autowired
-    private WebApplicationContext wac;
-    @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
     private MockMvc mockMvc;
 
     @BeforeEach
     void setup() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
         // Чистим и наполняем БД перед каждым тестом
         jdbcTemplate.execute("DELETE FROM myblog.posts WHERE id = 4 OR id = 5");
@@ -120,7 +114,8 @@ class PostsControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                /*.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))*/
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.title").value("Мой пост №1"))
                 .andExpect(jsonPath("$.text").value("С чего начать..."))
                 .andReturn();
@@ -259,7 +254,8 @@ class PostsControllerIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                /*.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))*/
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.text").value("Белые ночи"))
                 .andReturn();
 

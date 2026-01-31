@@ -1,5 +1,7 @@
 package ru.yandex.practica.testconfig;
 
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -13,15 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Configuration
-@EnableWebMvc
-@ComponentScan(basePackages = {
-        "ru.yandex.practica.testconfig",
-        "ru.yandex.practica.controllers",
-        "ru.yandex.practica.models",
-        "ru.yandex.practica.services",
-        "ru.yandex.practica.repositories"
-})
+@TestConfiguration
 public class TestWebConfiguration implements WebMvcConfigurer {
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {

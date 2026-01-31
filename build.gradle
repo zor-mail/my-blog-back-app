@@ -25,7 +25,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-	runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.postgresql:postgresql:42.7.3'
 
     testRuntimeOnly 'com.h2database:h2'
 
@@ -75,6 +75,11 @@ tasks.named('test').configure {
         showStandardStreams = true
     }
 }
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
 // JAR будет самозапускающимся (fat/uber jar)
 jar {
     enabled = false  // отключаем обычный jar, используем bootJar

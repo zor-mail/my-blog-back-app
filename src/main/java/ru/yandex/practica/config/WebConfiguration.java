@@ -1,5 +1,6 @@
 package ru.yandex.practica.config;
 
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -13,14 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Configuration
-@EnableWebMvc
-@ComponentScan(basePackages = {
-        "ru.yandex.practica.controllers",
-        "ru.yandex.practica.services",
-        "ru.yandex.practica.repositories",
-        "ru.yandex.practica.config"}
-)
+@SpringBootConfiguration
 public class WebConfiguration implements WebMvcConfigurer {
 
 
