@@ -86,3 +86,10 @@ tasks.named('test') {
 jar {
     enabled = false  // отключаем обычный jar, используем bootJar
 }
+bootJar {
+    enabled = true    // используем Spring Boot fat JAR
+    archiveFileName = 'api.jar'
+    archiveVersion = ''
+    archiveClassifier = ''
+    archiveBaseName = 'api'
+}
