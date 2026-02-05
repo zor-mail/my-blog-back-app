@@ -1,0 +1,99 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.10'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'ru.yandex.practica'
+version = '0.0.1-SNAPSHOT'
+description = 'Yandex project for Spring Boot 3 sprint 4'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+springBoot {
+    buildInfo() // отчёт о сборке
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.postgresql:postgresql:42.7.3'
+
+    testRuntimeOnly 'com.h2database:h2'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.jayway.jsonpath:json-path'  // Для JsonPath тестов
+
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+}
+
+tasks.withType(JavaExec).configureEach {
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+}
+
+// Для Spring Boot задач
+tasks.named('bootRun').configure {
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'sun.jnu.encoding', 'UTF-8'
+    systemProperty 'server.servlet.encoding.charset', 'UTF-8'
+    systemProperty 'server.servlet.encoding.enabled', 'true'
+    systemProperty 'server.servlet.encoding.force', 'true'
+}
+
+tasks.named('test').configure {
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = true
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// JAR будет самозапускающимся (fat/uber jar)
+jar {
+    enabled = false  // отключаем обычный jar, используем bootJar
+}
+bootJar {
+    enabled = true    // используем Spring Boot fat JAR
+    archiveFileName = 'api.jar'
+    archiveVersion = ''
+    archiveClassifier = ''
+    archiveBaseName = 'api'
+}
